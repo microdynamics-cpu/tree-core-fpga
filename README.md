@@ -1,6 +1,6 @@
 <p align="center">
     <!-- <img width="200px" src="./.images/tree_core_logo.svg" align="center" alt="Tree Core CPU" /> -->
-    <h2 align="center">TreeCore FPGA: A series of FPGA Hardare Designs for Processor Simulation and Verification</h2>
+    <h2 align="center">TreeCore FPGA: An Universal FPGA Framework for SoC Simulation and Verification</h2>
 </p>
 <p align="center">
     <a href="https://github.com/microdynamics-cpu/tree-core-fpga/actions">
