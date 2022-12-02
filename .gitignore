@@ -7,3 +7,5 @@
 *.oo
 dependency
 build
+*.jou
+*.log
