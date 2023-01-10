@@ -1,5 +1,4 @@
 <p align="center">
-    <!-- <img width="200px" src="./.images/tree_core_logo.svg" align="center" alt="Tree Core CPU" /> -->
     <h2 align="center">TreeCore FPGA: An Universal FPGA Framework for SoC Simulation and Verification</h2>
 </p>
 <p align="center">
