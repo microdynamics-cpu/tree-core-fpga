@@ -33,6 +33,5 @@
 All of the TreeCore FPGA codes are release under the [GPL-3.0 License](LICENSE).
 
 ## Acknowledgement
-1. [icesugar](https://github.com/wuxx/icesugar)
 
 ## Reference
