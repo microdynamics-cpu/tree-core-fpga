@@ -2,12 +2,12 @@ module rsp_fifo (
     input rstn,
 
     input          push_valid,
-    output         push_rdy,
+    output         push_ready,
     input          push_clk,
     input  [127:0] push_rsp_data,
 
     output         pop_valid,
-    input          pop_rdy,
+    input          pop_ready,
     input          pop_clk,
     output [127:0] pop_rsp_data
 );
@@ -17,11 +17,11 @@ module rsp_fifo (
       .Reset(~rstn),
       .WrClk(push_clk),
       .RdClk(pop_clk),
-      .WrEn (push_valid && push_rdy),
-      .RdEn (pop_valid && pop_rdy),
+      .WrEn (push_valid && push_ready),
+      .RdEn (pop_valid && pop_ready),
       .Q    (pop_rsp_data),
-      .Empty(~push_rdy),
-      .Full (~pop_rdy)
+      .Empty(~push_ready),
+      .Full (~pop_ready)
   );
 
 endmodule

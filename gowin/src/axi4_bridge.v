@@ -5,23 +5,23 @@ module axi4_bridge (
 
     // fifo cache slave
     input          fifo_cmd_valid,
-    output         fifo_cmd_rdy,
+    output         fifo_cmd_ready,
     input          fifo_cmd_type,
     input  [ 26:0] fifo_cmd_addr,
     input  [  5:0] fifo_cmd_burst_cnt,
     input  [127:0] fifo_cmd_wt_data,
     input  [ 15:0] fifo_cmd_wt_mask,
     output         fifo_rsp_valid,
-    input          fifo_rsp_rdy,
+    input          fifo_rsp_ready,
     output [127:0] fifo_rsp_data,
 
-    // ddr3 ip interface
+    // ddr3 master
     output reg [  5:0] app_burst_number,
-    input              app_cmd_rdy,
+    input              app_cmd_ready,
     output reg [  2:0] app_cmd,
     output reg         app_cmd_en,
     output     [ 26:0] app_addr,
-    input              app_wdata_rdy,
+    input              app_wdata_ready,
     output reg [127:0] app_wdata,
     output reg         app_wdata_en,
     output reg         app_wdata_end,
@@ -48,14 +48,14 @@ module axi4_bridge (
 
   reg  cmd_free;
   wire cmd_can_send;
-  assign cmd_can_send = app_cmd_rdy && app_wdata_rdy && init_calib_complete;
+  assign cmd_can_send = app_cmd_ready && app_wdata_ready && init_calib_complete;
 
   // handshake signal
   wire wt_fire;
   wire rd_fire;
   wire data_fire;
 
-  assign wt_fire   = app_wdata_en && app_wdata_rdy;
+  assign wt_fire   = app_wdata_en && app_wdata_ready;
   assign rd_fire   = app_rdata_valid;
   assign data_fire = wt_fire || rd_fire;
 

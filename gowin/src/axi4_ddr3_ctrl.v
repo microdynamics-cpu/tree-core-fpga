@@ -50,8 +50,6 @@ module axi4_ddr3_ctrl (
     inout  [ 1:0] ddr_dqs_n
 );
 
-  assign ddr_cs = 1'b0;
-
   wire lock;
   wire clk_mem;
   wire clk_mem_div4;
@@ -61,55 +59,25 @@ module axi4_ddr3_ctrl (
       .clkin (clk)
   );
 
-  wire         axi4_awready;
-  wire         axi4_awvalid;
-  wire [  3:0] axi4_awid;
-  wire [ 31:0] axi4_awaddr;
-  wire [  7:0] axi4_awlen;
-  wire [  2:0] axi4_awsize;
-  wire [  1:0] axi4_awburst;
-  wire         axi4_wready;
-  wire         axi4_wvalid;
-  wire [ 63:0] axi4_wdata;
-  wire [  7:0] axi4_wstrb;
-  wire         axi4_wlast;
-  wire         axi4_bready;
-  wire         axi4_bvalid;
-  wire [  3:0] axi4_bid;
-  wire [  1:0] axi4_bresp;
-  wire         axi4_arready;
-  wire         axi4_arvalid;
-  wire [  3:0] axi4_arid;
-  wire [ 31:0] axi4_araddr;
-  wire [  7:0] axi4_arlen;
-  wire [  2:0] axi4_arsize;
-  wire [  1:0] axi4_arburst;
-  wire         axi4_rready;
-  wire         axi4_rvalid;
-  wire [  3:0] axi4_rid;
-  wire [ 63:0] axi4_rdata;
-  wire [  1:0] axi4_rresp;
-  wire         axi4_rlast;
-
   // fifo ctrl
   wire         cmd_valid;
-  wire         cmd_rdy;
+  wire         cmd_ready;
   wire         cmd_type;
   wire [ 26:0] cmd_addr;
   wire [  5:0] cmd_burst_cnt;
   wire [127:0] cmd_wt_data;
   wire [ 15:0] cmd_wt_mask;
   wire         rsp_valid;
-  wire         rsp_rdy;
+  wire         rsp_ready;
   wire [127:0] rsp_data;
 
   // ddr3 ctrl
   wire [  5:0] ddr3_burst_number;
-  wire         ddr3_cmd_rdy;
+  wire         ddr3_cmd_ready;
   wire [  2:0] ddr3_cmd;
   wire         ddr3_cmd_en;
   wire [ 26:0] ddr3_addr;
-  wire         ddr3_wdata_rdy;
+  wire         ddr3_wdata_ready;
   wire [127:0] ddr3_wdata;
   wire         ddr3_wdata_en;
   wire         ddr3_wdata_end;
@@ -123,46 +91,46 @@ module axi4_ddr3_ctrl (
       .clk (clk),
       .rstn(lock),
 
-      .io_axi4_awready(axi4_awready),
-      .io_axi4_awvalid(axi4_awvalid),
-      .io_axi4_awid   (axi4_awid),
-      .io_axi4_awaddr (axi4_awaddr),
-      .io_axi4_awlen  (axi4_awlen),
-      .io_axi4_awsize (axi4_awsize),
-      .io_axi4_awburst(axi4_awburst),
-      .io_axi4_wready (axi4_wready),
-      .io_axi4_wvalid (axi4_wvalid),
-      .io_axi4_wdata  (axi4_wdata),
-      .io_axi4_wstrb  (axi4_wstrb),
-      .io_axi4_wlast  (axi4_wlast),
-      .io_axi4_bready (axi4_bready),
-      .io_axi4_bvalid (axi4_bvalid),
-      .io_axi4_bid    (axi4_bid),
-      .io_axi4_bresp  (axi4_bresp),
-      .io_axi4_arready(axi4_arready),
-      .io_axi4_arvalid(axi4_arvalid),
-      .io_axi4_arid   (axi4_arid),
-      .io_axi4_araddr (axi4_araddr),
-      .io_axi4_arlen  (axi4_arlen),
-      .io_axi4_arsize (axi4_arsize),
-      .io_axi4_arburst(axi4_arburst),
-      .io_axi4_rready (axi4_rready),
-      .io_axi4_rvalid (axi4_rvalid),
-      .io_axi4_rid    (axi4_rid),
-      .io_axi4_rdata  (axi4_rdata),
-      .io_axi4_rresp  (axi4_rresp),
-      .io_axi4_rlast  (axi4_rlast),
+      .io_axi4_awready(io_axi4_awready),
+      .io_axi4_awvalid(io_axi4_awvalid),
+      .io_axi4_awid   (io_axi4_awid),
+      .io_axi4_awaddr (io_axi4_awaddr),
+      .io_axi4_awlen  (io_axi4_awlen),
+      .io_axi4_awsize (io_axi4_awsize),
+      .io_axi4_awburst(io_axi4_awburst),
+      .io_axi4_wready (io_axi4_wready),
+      .io_axi4_wvalid (io_axi4_wvalid),
+      .io_axi4_wdata  (io_axi4_wdata),
+      .io_axi4_wstrb  (io_axi4_wstrb),
+      .io_axi4_wlast  (io_axi4_wlast),
+      .io_axi4_bready (io_axi4_bready),
+      .io_axi4_bvalid (io_axi4_bvalid),
+      .io_axi4_bid    (io_axi4_bid),
+      .io_axi4_bresp  (io_axi4_bresp),
+      .io_axi4_arready(io_axi4_arready),
+      .io_axi4_arvalid(io_axi4_arvalid),
+      .io_axi4_arid   (io_axi4_arid),
+      .io_axi4_araddr (io_axi4_araddr),
+      .io_axi4_arlen  (io_axi4_arlen),
+      .io_axi4_arsize (io_axi4_arsize),
+      .io_axi4_arburst(io_axi4_arburst),
+      .io_axi4_rready (io_axi4_rready),
+      .io_axi4_rvalid (io_axi4_rvalid),
+      .io_axi4_rid    (io_axi4_rid),
+      .io_axi4_rdata  (io_axi4_rdata),
+      .io_axi4_rresp  (io_axi4_rresp),
+      .io_axi4_rlast  (io_axi4_rlast),
 
       .fifo_cmd_valid    (cmd_valid),
-      .fifo_cmd_rdy      (cmd_rdy),
+      .fifo_cmd_ready    (cmd_ready),
       .fifo_cmd_type     (cmd_type),
       .fifo_cmd_addr     (cmd_addr),
       .fifo_cmd_burst_cnt(cmd_burst_cnt),
       .fifo_cmd_wt_data  (cmd_wt_data),
       .fifo_cmd_wt_mask  (cmd_wt_mask),
       .fifo_rsp_valid    (rsp_valid),
-      .fifo_rsp_rdy      (rsp_rdy),
-      .fifo_rsp_dat      (rsp_dat)
+      .fifo_rsp_ready    (rsp_ready),
+      .fifo_rsp_dat      (rsp_data)
   );
 
 
@@ -172,22 +140,22 @@ module axi4_ddr3_ctrl (
       .rstn   (lock),
 
       .fifo_cmd_valid    (cmd_valid),
-      .fifo_cmd_rdy      (cmd_rdy),
+      .fifo_cmd_ready    (cmd_ready),
       .fifo_cmd_type     (cmd_type),
       .fifo_cmd_addr     (cmd_addr),
       .fifo_cmd_burst_cnt(cmd_burst_cnt),
       .fifo_cmd_wt_data  (cmd_wt_data),
       .fifo_cmd_wt_mask  (cmd_wt_mask),
       .fifo_rsp_valid    (rsp_valid),
-      .fifo_rsp_rdy      (rsp_rdy),
+      .fifo_rsp_ready    (rsp_ready),
       .fifo_rsp_data     (rsp_data),
 
       .app_burst_number   (ddr3_burst_number),
-      .app_cmd_rdy        (ddr3_cmd_rdy),
+      .app_cmd_ready      (ddr3_cmd_ready),
       .app_cmd            (ddr3_cmd),
       .app_cmd_en         (ddr3_cmd_en),
       .app_addr           (ddr3_addr),
-      .app_wdata_rdy      (ddr3_wdata_rdy),
+      .app_wdata_ready    (ddr3_wdata_ready),
       .app_wdata          (ddr3_wdata),
       .app_wdata_en       (ddr3_wdata_en),
       .app_wdata_end      (ddr3_wdata_end),
@@ -206,11 +174,11 @@ module axi4_ddr3_ctrl (
       .pll_lock           (lock),
       .rst_n              (lock),
       .app_burst_number   (ddr3_burst_number),
-      .cmd_ready          (ddr3_cmd_rdy),
+      .cmd_ready          (ddr3_cmd_ready),
       .cmd                (ddr3_cmd),
       .cmd_en             (ddr3_cmd_en),
-      .addr               (ddr3_addr),
-      .wr_data_rdy        (ddr3_wdata_rdy),
+      .addr               ({1'b0, ddr3_addr}),
+      .wr_data_rdy        (ddr3_wdata_ready),
       .wr_data            (ddr3_wdata),
       .wr_data_en         (ddr3_wdata_en),
       .wr_data_end        (ddr3_wdata_end),
@@ -243,5 +211,7 @@ module axi4_ddr3_ctrl (
       .IO_ddr_dqs   (ddr_dqs),
       .IO_ddr_dqs_n (ddr_dqs_n)
   );
+
+  assign ddr_cs = 1'b0;
 
 endmodule

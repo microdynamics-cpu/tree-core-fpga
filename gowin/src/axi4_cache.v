@@ -2,7 +2,7 @@ module axi4_cache (
     input clk,  // 27MHz
     input rstn,
 
-    // axi4
+    // axi4 slave
     output        io_axi4_awready,
     input         io_axi4_awvalid,
     input  [ 3:0] io_axi4_awid,
@@ -35,14 +35,14 @@ module axi4_cache (
 
     // fifo cache master
     output         fifo_cmd_valid,
-    input          fifo_cmd_rdy,
+    input          fifo_cmd_ready,
     output         fifo_cmd_type,
     output [ 26:0] fifo_cmd_addr,
     output [  5:0] fifo_cmd_burst_cnt,
     output [127:0] fifo_cmd_wt_data,
     output [ 15:0] fifo_cmd_wt_mask,
     input          fifo_rsp_valid,
-    output         fifo_rsp_rdy,
+    output         fifo_rsp_ready,
     input  [127:0] fifo_rsp_data
 );
 
