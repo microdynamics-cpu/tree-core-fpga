@@ -34,16 +34,16 @@ module axi4_cache (
     output        io_axi4_rlast,
 
     // fifo cache master
-    output         fifo_cmd_valid,
-    input          fifo_cmd_ready,
-    output         fifo_cmd_type,
-    output [ 26:0] fifo_cmd_addr,
-    output [  5:0] fifo_cmd_burst_cnt,
-    output [127:0] fifo_cmd_wt_data,
-    output [ 15:0] fifo_cmd_wt_mask,
-    input          fifo_rsp_valid,
-    output         fifo_rsp_ready,
-    input  [127:0] fifo_rsp_data
+    output         io_fifo_cmd_valid,
+    input          io_fifo_cmd_ready,
+    output         io_fifo_cmd_type,
+    output [ 26:0] io_fifo_cmd_addr,
+    output [  5:0] io_fifo_cmd_burst_cnt,
+    output [127:0] io_fifo_cmd_wt_data,
+    output [ 15:0] io_fifo_cmd_wt_mask,
+    input          io_fifo_rsp_valid,
+    output         io_fifo_rsp_ready,
+    input  [127:0] io_fifo_rsp_data
 );
 
 
