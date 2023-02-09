@@ -4,7 +4,7 @@ module cmd_fifo (
     input          push_clk,
     input          io_push_valid,
     output         io_push_ready,
-    input          io_push_cmd_type,
+    input  [  1:0] io_push_cmd_type,
     input  [ 26:0] io_push_addr,
     input  [  5:0] io_push_burst_cnt,
     input  [127:0] io_push_wt_data,
@@ -13,16 +13,16 @@ module cmd_fifo (
     input          pop_clk,
     input          io_pop_valid,
     output         io_pop_ready,
-    output         io_pop_cmd_type,
+    output [  1:0] io_pop_cmd_type,
     output [ 26:0] io_pop_addr,
     output [  5:0] io_pop_burst_cnt,
     output [127:0] io_pop_wt_data,
     output [ 15:0] io_pop_wt_mask
 );
 
-  // 1 + 27 + 6 + 128 + 16 = 178bits
-  wire [177:0] push_data;
-  wire [177:0] pop_data;
+  // 2 + 27 + 6 + 128 + 16 = 179bits
+  wire [178:0] push_data;
+  wire [178:0] pop_data;
   wire         empty;
   wire         full;
 
