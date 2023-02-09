@@ -7,10 +7,15 @@ module rsp_fifo (
     input  [127:0] io_push_rsp_data,
 
     input          pop_clk,
-    output         io_pop_valid,
-    input          io_pop_ready,
+    input          io_pop_valid,
+    output         io_pop_ready,
     output [127:0] io_pop_rsp_data
 );
+
+  wire empty;
+  wire full;
+  assign io_push_ready = rstn && (~full);
+  assign io_pop_ready  = rstn && (~empty);
 
   FIFO_HS_RSP fifo_hs_rsp (
       .Data (io_push_rsp_data),
@@ -20,8 +25,8 @@ module rsp_fifo (
       .WrEn (io_push_valid && io_push_ready),
       .RdEn (io_pop_valid && io_pop_ready),
       .Q    (io_pop_rsp_data),
-      .Empty(~io_push_ready),
-      .Full (~io_pop_ready)
+      .Empty(empty),
+      .Full (full)
   );
 
 endmodule
