@@ -24,27 +24,27 @@ module axi4_bridge (
     input              io_app_wdata_ready,
     output     [127:0] io_app_wdata,
     output reg         io_app_wdata_en,
-    output             io_app_wdata_end,
+    output reg         io_app_wdata_end,
     output     [ 15:0] io_app_wdata_mask,
     input      [127:0] io_app_rdata,
     input              io_app_rdata_valid,
-    input              io_app_rdata_end,
+    input              io_app_rdata_end, // no used
     input              io_init_calib_complete
 );
 
   localparam WT_CMD = 3'd0;
   localparam RD_CMD = 3'd1;
 
-  wire         cmd_valid;
-  wire         cmd_ready;
-  wire         cmd_type;
-  wire [ 26:0] cmd_addr;
-  wire [  5:0] cmd_burst_cnt;
-  wire [127:0] cmd_wt_data;
-  wire [ 15:0] cmd_wt_mask;
-  wire         cmd_rsp_valid;
-  wire         cmd_rsp_ready;
-  wire [127:0] cmd_rsp_data;
+  wire         pop_cmd_valid;
+  wire         pop_cmd_ready;
+  wire         pop_cmd_type;
+  wire [ 26:0] pop_cmd_addr;
+  wire [  5:0] pop_cmd_burst_cnt;
+  wire [127:0] pop_cmd_wt_data;
+  wire [ 15:0] pop_cmd_wt_mask;
+  wire         push_rsp_valid;
+  wire         push_rsp_ready;
+  wire [127:0] push_rsp_data;
 
   reg          int_cmd_type;
   reg  [ 26:0] int_cmd_addr;
@@ -56,15 +56,11 @@ module axi4_bridge (
   // handshake signal
   reg          cmd_free;
   reg          cmd_can_send;
-  reg          cmd_trigger;
   reg          cmd_en;
   reg  [  6:0] burst_cnt;
   wire         wt_fire;
   wire         rd_fire;
   wire         data_fire;
-  reg  [ 26:0] int_app_addr;
-
-  assign app_addr = int_app_addr;
 
   cmd_fifo u_cmd_fifo (
       .rstn(rstn),
@@ -79,23 +75,22 @@ module axi4_bridge (
       .io_push_wt_mask  (io_fifo_cmd_wt_mask),
 
       .pop_clk         (clk_ref),
-      .io_pop_valid    (cmd_valid),
-      .io_pop_ready    (cmd_ready),
-      .io_pop_cmd_type (cmd_type),
-      .io_pop_addr     (cmd_addr),
-      .io_pop_burst_cnt(cmd_burst_cnt),
-      .io_pop_wt_data  (cmd_wt_data),
-      .io_pop_wt_ma    (cmd_wt_mask)
+      .io_pop_valid    (pop_cmd_valid),
+      .io_pop_ready    (pop_cmd_ready),
+      .io_pop_cmd_type (pop_cmd_type),
+      .io_pop_addr     (pop_cmd_addr),
+      .io_pop_burst_cnt(pop_cmd_burst_cnt),
+      .io_pop_wt_data  (pop_cmd_wt_data),
+      .io_pop_wt_ma    (pop_cmd_wt_mask)
   );
-
 
   rsp_fifo u_rsp_fifo (
       .rstn(rstn),
 
       .push_clk        (clk_ref),
-      .io_push_valid   (cmd_rsp_valid),
-      .io_push_ready   (cmd_rsp_ready),
-      .io_push_rsp_data(cmd_rsp_data),
+      .io_push_valid   (push_rsp_valid),
+      .io_push_ready   (push_rsp_ready),
+      .io_push_rsp_data(push_rsp_data),
 
       .pop_clk        (clk),
       .io_pop_valid   (io_fifo_rsp_valid),
@@ -104,31 +99,69 @@ module axi4_bridge (
   );
 
 
-
-
-
-
   assign wt_fire             = io_app_wdata_en && io_app_wdata_ready;
   assign rd_fire             = io_app_rdata_valid;
   assign data_fire           = wt_fire || rd_fire;
 
-  assign io_app_cmd_en       = cmd_en;
-  assign io_app_burst_number = int_cmd_burst_cnt;
+  assign io_fifo_cmd_ready   = cmd_free && cmd_can_send;
 
-  assign cmd_rsp_valid       = io_app_rdata_valid;
-  assign cmd_rsp_data        = io_app_rdata;
+  assign io_app_burst_number = int_cmd_burst_cnt;
+  assign io_app_cmd_en       = cmd_en;
+  assign io_app_addr         = int_cmd_addr;
+  assign io_app_wdata        = int_cmd_wt_data;
+  assign io_app_wdata_mask   = int_cmd_wt_mask;
+  assign push_rsp_ready      = io_app_rdata_valid; // end is same as valid, not used
+  assign push_rsp_data       = io_app_rdata;
+  
+
+  always @(*) begin
+    if (int_cmd_type == WT_CMD) begin
+      io_app_cmd       = WT_CMD;
+      io_app_wdata_en  = (burst_cnt != int_cmd_burst_cnt + 1'b1) && io_app_wdata_ready;
+      io_app_wdata_end = (burst_cnt != int_cmd_burst_cnt + 1'b1) && io_app_wdata_ready;
+    end else begin
+      io_app_cmd       = RD_CMD;
+      io_app_wdata_en  = 1'b0;
+      io_app_wdata_end = 1'b0;
+    end
+  end
 
   always @(posedge clk_ref or negedge rstn) begin
     if (~rstn) begin
       cmd_free     <= 1'b1;
       cmd_can_send <= 1'b0;
-      cmd_trigger  <= 1'b0;
       cmd_en       <= 1'b0;
       burst_cnt    <= 7'd0;
     end else begin
       cmd_can_send <= io_app_cmd_ready && io_app_wdata_ready && io_init_calib_complete;
-      cmd_en       <= cmd_trigger;
 
+      // handle the new cmd fifo data
+      if (io_fifo_cmd_valid && io_fifo_cmd_ready) begin
+        cmd_free          <= 1'b0;
+        cmd_en            <= 1'b1;
+        burst_cnt         <= 7'd0;
+
+        int_cmd_type      <= pop_cmd_type;
+        int_cmd_addr      <= pop_cmd_addr;
+        int_cmd_burst_cnt <= pop_cmd_burst_cnt;
+        int_cmd_wt_data   <= pop_cmd_wt_data;
+        int_cmd_wt_mask   <= pop_cmd_wt_mask;
+      end
+
+      // only keep one cycle
+      if(cmd_en) begin
+        cmd_en <= 1'b0;
+      end
+
+      if (data_fire) begin
+        burst_cnt <= burst_cnt + 1'd1;
+      end
+
+      if (burst_cnt == int_cmd_burst_cnt + 1'b1) begin
+        if (cmd_free == 1'b0) begin
+          cmd_free <= 1'b1;
+        end
+      end
     end
   end
 endmodule

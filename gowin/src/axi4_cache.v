@@ -66,8 +66,10 @@ module axi4_cache (
   wire         no_same;
   wire         is_dirty;
   wire         axi4_aw_fire;
-  wire         axi4_ar_fire;
   wire         axi4_w_fire;
+  wire         axi4_b_fire;
+  wire         axi4_ar_fire;
+  wire         axi4_r_fire;
 
   reg  [  3:0] int_axi4_arw_id;
   reg  [ 31:0] int_axi4_arw_addr;
@@ -91,8 +93,10 @@ module axi4_cache (
   assign no_same               = cache_addr[26:4] != int_axi4_arw_addr[26:4];
   assign is_dirty              = cache_dirty_bit != 16'hFFFF;
   assign axi4_aw_fire          = io_axi4_awvalid && io_axi4_awready;
-  assign axi4_ar_fire          = io_axi4_arvalid && io_axi4_arready;
   assign axi4_w_fire           = io_axi4_wvalid && io_axi4_wready;
+  assign axi4_b_fire           = io_axi4_bvalid && io_axi4_bready;
+  assign axi4_ar_fire          = io_axi4_arvalid && io_axi4_arready;
+  assign axi4_r_fire           = io_axi4_rvalid && io_axi4_rready;
 
   assign io_axi4_awready       = arw_free;
   assign io_axi4_arready       = arw_free;
@@ -175,6 +179,17 @@ module axi4_cache (
 
       if (arw_free == 1'b0) begin
         if (no_same) begin
+          if (is_dirty_trigger) begin
+            int_cmd_valid <= ~(io_fifo_cmd_valid && io_fifo_cmd_ready);
+            if (io_fifo_cmd_valid && io_fifo_cmd_ready) begin
+              is_dirty_trigger <= 1'b0;
+            end
+          end else if (no_same_trigger) begin
+            int_cmd_valid <= ~(io_fifo_cmd_valid && io_fifo_cmd_ready);
+            if (io_fifo_cmd_valid && io_fifo_cmd_ready) begin
+              no_same_trigger <= 1'b0;
+            end
+          end
         end else begin
           if (int_axi4_arw_type == WT_CMD) begin
             if (axi4_w_fire) begin
@@ -248,6 +263,20 @@ module axi4_cache (
                   end
                 end
               endcase
+
+              int_axi4_w_ready <= 1'b0;
+              int_axi4_b_valid <= 1'b1;
+            end
+
+            int_axi4_w_ready <= ~int_axi4_b_valid;
+            if (axi4_b_fire) begin
+              int_axi4_b_valid <= 1'b0;
+              arw_free         <= 1'b1;
+            end
+          end else begin
+            int_axi4_r_valid <= ~axi4_r_fire;
+            if (axi4_r_fire) begin
+              arw_free <= 1'b1;
             end
           end
         end
