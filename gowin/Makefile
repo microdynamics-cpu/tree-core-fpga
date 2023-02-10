@@ -2,7 +2,8 @@ SIM_TOOL    ?= iverilog
 RUN_TOOL    ?= vvp
 WAVE_FORMAT ?=
 
-SIM_TOP := fifo_tb
+MODEL :=
+SIM_TOP := ${MODEL}_tb
 TEST_ARGS ?= default_args
 
 ifeq ($(TEST_ARGS), dump_fst_wave)
