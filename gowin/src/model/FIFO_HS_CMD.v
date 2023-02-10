@@ -164,7 +164,13 @@ module DPRAM #(
 );
 
   // DEPTH = 2 ^ ADDR
-  reg [WIDTH-1:0] mem[DEPTH-1:0];
+  reg [WIDTH-1:0] mem[0:DEPTH-1];
+
+  initial begin
+    for (integer i = 0; i < DEPTH; ++i) begin
+      mem[i] <= 'b0;
+    end
+  end
 
   always @(posedge wt_clk) begin
     if (wt_en) mem[wt_addr] <= wt_data;

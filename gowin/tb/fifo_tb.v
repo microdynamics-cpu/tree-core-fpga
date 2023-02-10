@@ -11,9 +11,9 @@ module fifo_tb ();
     clk_25MHz  = 1'b0;
     clk_100MHz = 1'b0;
     rstn       = 1'b0;
-    repeat (100) @(posedge clk_25MHz);
-    #100 rstn = 1;
-    $finish;
+    // repeat (10) @(posedge clk_25MHz);
+    #97 rstn = 1;  // 97 for aync to clk edge
+    #500 $finish;
   end
 
 
@@ -30,17 +30,20 @@ module fifo_tb ();
   wire             wt_clk;
   wire             rd_clk;
   reg  [WIDTH-1:0] wt_data;
+  wire [WIDTH-1:0] rd_data;
   wire             wt_en;
   wire             rd_en;
   wire             empty;
   wire             full;
 
-  assign wt_clk = clk_25MHz;
-  assign rd_clk = clk_100MHz;
+  // assign wt_clk = clk_25MHz;
+  assign wt_clk = clk_100MHz;
+  // assign rd_clk = clk_100MHz;
+  assign rd_clk = clk_25MHz;
   assign wt_en  = rstn && (~full);
   assign rd_en  = rstn && (~empty);
 
-  always @(posedge clk_25MHz or negedge rstn) begin
+  always @(posedge wt_clk or negedge rstn) begin
     if (~rstn) begin
       wt_data <= 'b0;
     end else begin
@@ -58,7 +61,7 @@ module fifo_tb ();
       .RdClk(rd_clk),
       .WrEn (wt_en),
       .RdEn (rd_en),
-      .Q    (),
+      .Q    (rd_data),
       .Empty(empty),
       .Full (full)
   );
