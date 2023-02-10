@@ -5,7 +5,7 @@ module fifo_tb ();
   reg clk_25MHz;
   reg clk_100MHz;
   always #20.000 clk_25MHz <= ~clk_25MHz;
-  always #5.000 clk_100MHz <= ~ clk_100MHz;
+  always #5.000 clk_100MHz <= ~clk_100MHz;
 
   initial begin
     clk_25MHz  = 1'b0;
@@ -22,16 +22,45 @@ module fifo_tb ();
     $dumpvars(0, fifo_tb);
   end
 
-  FIFO_HS_CMD fifo_hs_cmd (
-    .Data(179'd0),
-    .Reset(~rstn),
-    .WrClk(clk_25MHz),
-    .RdClk(clk_100MHz),
-    .WrEn (1'b1),
-    .RdEn (1'b1),
-    .Q    (),
-    .Empty(),
-    .Full ()
+
+  localparam WIDTH = 179;
+  localparam DEPTH = 4;
+
+
+  wire             wt_clk;
+  wire             rd_clk;
+  reg  [WIDTH-1:0] wt_data;
+  wire             wt_en;
+  wire             rd_en;
+  wire             empty;
+  wire             full;
+
+  assign wt_clk = clk_25MHz;
+  assign rd_clk = clk_100MHz;
+  assign wt_en  = rstn && (~full);
+  assign rd_en  = rstn && (~empty);
+
+  always @(posedge clk_25MHz or negedge rstn) begin
+    if (~rstn) begin
+      wt_data <= 'b0;
+    end else begin
+      wt_data <= wt_data + 1'b1;
+    end
+  end
+
+  FIFO_HS_CMD #(
+      .WIDTH(WIDTH),
+      .DEPTH(DEPTH)
+  ) fifo_hs_cmd (
+      .Data (wt_data),
+      .Reset(~rstn),
+      .WrClk(wt_clk),
+      .RdClk(rd_clk),
+      .WrEn (wt_en),
+      .RdEn (rd_en),
+      .Q    (),
+      .Empty(empty),
+      .Full (full)
   );
 
 endmodule
