@@ -8,9 +8,9 @@ module ddr3_tb ();
   always #2.500 clk_400MHz <= ~clk_400MHz;
 
   initial begin
-    clk_25MHz  = 1'b0;
-    clk_400MHz = 1'b0;
-    lock       = 1'b0;
+    clk_25MHz  = 1'd0;
+    clk_400MHz = 1'd0;
+    lock       = 1'd0;
     // repeat (10) @(posedge clk_25MHz);
     #97 lock = 1;  // 97 for aync to clk edge
     #500 $finish;
@@ -23,37 +23,153 @@ module ddr3_tb ();
   end
 
 
+  localparam WAIT_INIT = 3'd0;
+  localparam FILL_INIT = 3'd1;
+  localparam FILL_WT = 3'd2;
+  localparam CHECK_INIT = 3'd3;
+  localparam CHECK_RD = 3'd4;
+  localparam CHECK_COMP = 3'd5;
+
   localparam WR_CMD = 3'd0;
   localparam RD_CMD = 3'd1;
 
+  localparam WIDTH = 128;
+  localparam DDR3_ADDR = 28;
+  localparam DATA_NUM = 8;
+  localparam DATA_ADDR = $clog2(DATA_NUM);
 
+  // MSB: |rank: 0 | bank: [3bit] | row: 0 [13bit] | col: [10bit]
+  wire                   clk_mem_div4;
+  wire                   int_app_init_calib_complete;
+  wire                   int_app_cmd_ready;
+  reg                    int_app_cmd_en;
+  reg  [            2:0] int_app_cmd;
+  reg  [DDR3_ADDR-1 : 0] int_app_addr;
+  reg  [            5:0] int_app_burst_number;
+  wire                   int_app_wdata_ready;
+  reg                    int_app_wdata_en;
+  reg                    int_app_wdata_end;
+  reg  [           15:0] int_app_wdata_mask;
+  reg  [      WIDTH-1:0] int_app_wdata;
+  wire                   int_app_rdata_valid;
+  wire                   int_app_rdata_end;
+  wire [      WIDTH-1:0] int_app_rdata;
+
+
+  reg  [            3:0] state;
+  reg  [  DATA_ADDR-1:0] wt_cnt;
+  reg  [            2:0] rdata_ptr;
+  reg  [      WIDTH-1:0] mem                         [0:DATA_NUM-1];
+
+
+  always @(posedge clk_mem_div4 or negedge lock) begin
+    if (~lock) begin
+      state                <= WAIT_INIT;
+      int_app_addr         <= 'd0;
+      int_app_burst_number <= 'd0;
+      int_app_cmd_en       <= 'd0;
+      int_app_cmd          <= 'd0;
+      int_app_wdata_en     <= 'd0;
+      int_app_wdata_end    <= 'd0;
+      int_app_wdata        <= 'd0;
+      wt_cnt               <= 'd0;
+      rdata_ptr            <= 'd0;
+    end else begin
+      case (state)
+        WAIT_INIT: begin
+          if (int_app_init_calib_complete) state <= FILL_INIT;
+        end
+
+        FILL_INIT: begin
+          if (int_app_cmd_ready && int_app_wdata_ready) begin
+            int_app_cmd_en       <= 1'd1;
+            int_app_cmd          <= WR_CMD;
+            int_app_addr         <= {DDR3_ADDR{1'd0}};
+            int_app_burst_number <= DATA_NUM - 1;
+
+            int_app_wdata_en     <= 1'd1;
+            int_app_wdata_end    <= 1'd1;
+            int_app_wdata        <= 128'h0123_4567_890A_BCDE_FEDC_BA98_7654_3210;
+            wt_cnt               <= wt_cnt + 1'd1;
+            state                <= FILL_WT;
+          end
+        end
+
+        FILL_WT: begin
+          int_app_cmd_en <= 1'd0;
+          if (int_app_wdata_ready) begin
+            if (wt_cnt == DATA_NUM - 1) begin
+              int_app_wdata_en  <= 1'd0;
+              int_app_wdata_end <= 1'd0;
+              wt_cnt            <= {DATA_ADDR{1'd0}};
+              state             <= CHECK_INIT;
+            end else begin
+              int_app_wdata_en  <= 1'd1;
+              int_app_wdata_end <= 1'd1;
+              int_app_wdata     <= int_app_wdata + 1'd1;
+              wt_cnt            <= wt_cnt + 1'd1;
+            end
+          end
+        end
+
+        CHECK_INIT: begin
+          if (int_app_cmd_ready) begin
+            int_app_cmd_en       <= 1'd1;
+            int_app_cmd          <= RD_CMD;
+            int_app_addr         <= {DDR3_ADDR{1'd0}};
+            int_app_burst_number <= DATA_NUM - 1;
+            state                <= CHECK_RD;
+            rdata_ptr            <= 3'd0;
+          end
+        end
+
+        CHECK_RD: begin
+          int_app_cmd_en <= 1'd0;
+          if (int_app_rdata_valid) begin
+            mem[rdata_ptr] <= int_app_rdata;
+            rdata_ptr      <= rdata_ptr + 1'd1;
+            if (rdata_ptr == 3'd3) begin
+              state     <= CHECK_COMP;
+              rdata_ptr <= 3'd0;
+            end
+          end
+        end
+
+        CHECK_COMP: begin
+        end
+        default: begin
+          state <= WAIT_INIT;
+        end
+      endcase
+    end
+  end
 
   DDR3_Memory_Interface_Top u_ddr3_ctrl (
       .memory_clk         (clk_400MHz),
       .clk                (clk_25MHz),
       .pll_lock           (lock),
       .rst_n              (lock),
-      .app_burst_number   (ddr3_burst_number),
-      .cmd_ready          (ddr3_cmd_ready),
-      .cmd                (ddr3_cmd),
-      .cmd_en             (ddr3_cmd_en),
-      .addr               ({1'b0, ddr3_addr}),
-      .wr_data_rdy        (ddr3_wdata_ready),
-      .wr_data            (ddr3_wdata),
-      .wr_data_en         (ddr3_wdata_en),
-      .wr_data_end        (ddr3_wdata_end),
-      .wr_data_mask       (ddr3_wdata_mask),
-      .rd_data            (ddr3_rdata),
-      .rd_data_valid      (ddr3_rdata_valid),
-      .rd_data_end        (ddr3_rdata_end),
-      .sr_req             (1'b0),
-      .ref_req            (1'b0),
+      .app_burst_number   (int_app_burst_number),
+      .cmd_ready          (int_app_cmd_ready),
+      .cmd                (int_app_cmd),
+      .cmd_en             (int_app_cmd_en),
+      .addr               (int_app_addr),
+      .wr_data_rdy        (int_app_wdata_ready),
+      .wr_data            (int_app_wdata),
+      .wr_data_en         (int_app_wdata_en),
+      .wr_data_end        (int_app_wdata_end),
+      .wr_data_mask       (int_app_wdata_mask),
+      .rd_data            (int_app_rdata),
+      .rd_data_valid      (int_app_rdata_valid),
+      .rd_data_end        (int_app_rdata_end),
+      .sr_req             (1'd0),
+      .ref_req            (1'd0),
       .sr_ack             (),
       .ref_ack            (),
-      .init_calib_complete(ddr3_init_calib_complete),
+      .init_calib_complete(int_app_init_calib_complete),
       .clk_out            (clk_mem_div4),
       .ddr_rst            (),
-      .burst              (1'b1),
+      .burst              (1'd1),
 
       .O_ddr_addr   (),
       .O_ddr_ba     (),
