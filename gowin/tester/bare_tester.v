@@ -1,22 +1,20 @@
 module bare_tester (
-    input             clk,
-    input             rstn,
-    input             init_calib_complete,
-    output reg [ 5:0] app_burst_number,
-    output     [27:0] app_addr,
+    input clk,
+    input rstn,
 
-    output reg       app_cmd_en,
-    output reg [2:0] app_cmd,
-    input            app_cmd_rdy,
-
+    input              init_calib_complete,
+    output reg [  5:0] app_burst_number,
+    output     [ 27:0] app_addr,
+    output reg         app_cmd_en,
+    output reg [  2:0] app_cmd,
+    input              app_cmd_rdy,
     output reg         app_wdata_en,
     output reg         app_wdata_end,
     output reg [127:0] app_wdata,
     input              app_wdata_rdy,
-
-    input         app_rdata_valid,
-    input         app_rdata_end,
-    input [127:0] app_rdata,
+    input              app_rdata_valid,
+    input              app_rdata_end,
+    input      [127:0] app_rdata,
 
     // test
     output [31:0] test_pin
@@ -42,7 +40,7 @@ module bare_tester (
   reg [127:0] rdata_buf    [5:0];
   reg [  2:0] rdata_idx;
 
-  // int_app_addr: bank: [3bit] row: [14bit] col: [10bit]
+  // int_app_addr: bank: [3bit] row: [13bit] col: [10bit]
   assign app_addr = {1'b0, int_app_addr};
 
   always @(posedge clk or negedge rstn) begin
