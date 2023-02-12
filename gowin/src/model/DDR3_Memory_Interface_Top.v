@@ -146,26 +146,26 @@ module DDR3_Memory_Interface_Top (
   end
 
   always @(*) begin
-    int_wt_mask[7:0]     = {8{wr_data_mask[0]}};
-    int_wt_mask[15:8]    = {8{wr_data_mask[1]}};
-    int_wt_mask[23:16]   = {8{wr_data_mask[2]}};
-    int_wt_mask[31:24]   = {8{wr_data_mask[3]}};
-    int_wt_mask[39:32]   = {8{wr_data_mask[4]}};
-    int_wt_mask[47:40]   = {8{wr_data_mask[5]}};
-    int_wt_mask[55:48]   = {8{wr_data_mask[6]}};
-    int_wt_mask[63:56]   = {8{wr_data_mask[7]}};
-    int_wt_mask[71:64]   = {8{wr_data_mask[8]}};
-    int_wt_mask[79:72]   = {8{wr_data_mask[9]}};
-    int_wt_mask[87:80]   = {8{wr_data_mask[10]}};
-    int_wt_mask[95:88]   = {8{wr_data_mask[11]}};
-    int_wt_mask[103:96]  = {8{wr_data_mask[12]}};
-    int_wt_mask[111:104] = {8{wr_data_mask[13]}};
-    int_wt_mask[119:112] = {8{wr_data_mask[14]}};
-    int_wt_mask[127:120] = {8{wr_data_mask[15]}};
+    int_wt_mask[7:0]     = {8{~wr_data_mask[0]}};
+    int_wt_mask[15:8]    = {8{~wr_data_mask[1]}};
+    int_wt_mask[23:16]   = {8{~wr_data_mask[2]}};
+    int_wt_mask[31:24]   = {8{~wr_data_mask[3]}};
+    int_wt_mask[39:32]   = {8{~wr_data_mask[4]}};
+    int_wt_mask[47:40]   = {8{~wr_data_mask[5]}};
+    int_wt_mask[55:48]   = {8{~wr_data_mask[6]}};
+    int_wt_mask[63:56]   = {8{~wr_data_mask[7]}};
+    int_wt_mask[71:64]   = {8{~wr_data_mask[8]}};
+    int_wt_mask[79:72]   = {8{~wr_data_mask[9]}};
+    int_wt_mask[87:80]   = {8{~wr_data_mask[10]}};
+    int_wt_mask[95:88]   = {8{~wr_data_mask[11]}};
+    int_wt_mask[103:96]  = {8{~wr_data_mask[12]}};
+    int_wt_mask[111:104] = {8{~wr_data_mask[13]}};
+    int_wt_mask[119:112] = {8{~wr_data_mask[14]}};
+    int_wt_mask[127:120] = {8{~wr_data_mask[15]}};
   end
 
   always @(posedge memory_clk) begin
-    if (int_wt_data_ready && wr_data_en) begin
+    if (int_cmd == WT_CMD && wr_data_en) begin
       mem[addr] <= wr_data & int_wt_mask;
     end
   end
@@ -174,7 +174,7 @@ module DDR3_Memory_Interface_Top (
     if (~rst_n) begin
       int_rd_data <= {WIDTH{1'd0}};
     end
-    if (int_rd_data_valid) begin
+    if (int_cmd == RD_CMD) begin
       int_rd_data <= mem[addr];
     end
   end

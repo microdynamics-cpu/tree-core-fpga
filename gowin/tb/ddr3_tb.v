@@ -2,6 +2,7 @@
 
 module ddr3_tb ();
   reg lock;
+  reg rstn;
   reg clk_25MHz;
   reg clk_400MHz;
   always #20.000 clk_25MHz <= ~clk_25MHz;
@@ -11,7 +12,8 @@ module ddr3_tb ();
     clk_25MHz  = 1'd0;
     clk_400MHz = 1'd0;
     lock       = 1'd0;
-    // repeat (10) @(posedge clk_25MHz);
+    rstn       = 1'd0;
+    #40 rstn = 1'd1;
     #97 lock = 1;  // 97 for aync to clk edge
     #500 $finish;
   end
@@ -30,7 +32,7 @@ module ddr3_tb ();
   localparam CHECK_RD = 3'd4;
   localparam CHECK_COMP = 3'd5;
 
-  localparam WR_CMD = 3'd0;
+  localparam WT_CMD = 3'd0;
   localparam RD_CMD = 3'd1;
 
   localparam WIDTH = 128;
@@ -56,9 +58,9 @@ module ddr3_tb ();
   wire [      WIDTH-1:0] int_app_rdata;
 
 
-  reg  [            3:0] state;
+  reg  [            2:0] state;
   reg  [  DATA_ADDR-1:0] wt_cnt;
-  reg  [            2:0] rdata_ptr;
+  reg  [  DATA_ADDR-1:0] rdata_ptr;
   reg  [      WIDTH-1:0] mem                         [0:DATA_NUM-1];
 
 
@@ -71,6 +73,7 @@ module ddr3_tb ();
       int_app_cmd          <= 'd0;
       int_app_wdata_en     <= 'd0;
       int_app_wdata_end    <= 'd0;
+      int_app_wdata_mask   <= 'd0;
       int_app_wdata        <= 'd0;
       wt_cnt               <= 'd0;
       rdata_ptr            <= 'd0;
@@ -83,7 +86,7 @@ module ddr3_tb ();
         FILL_INIT: begin
           if (int_app_cmd_ready && int_app_wdata_ready) begin
             int_app_cmd_en       <= 1'd1;
-            int_app_cmd          <= WR_CMD;
+            int_app_cmd          <= WT_CMD;
             int_app_addr         <= {DDR3_ADDR{1'd0}};
             int_app_burst_number <= DATA_NUM - 1;
 
@@ -148,7 +151,7 @@ module ddr3_tb ();
       .memory_clk         (clk_400MHz),
       .clk                (clk_25MHz),
       .pll_lock           (lock),
-      .rst_n              (lock),
+      .rst_n              (rstn),
       .app_burst_number   (int_app_burst_number),
       .cmd_ready          (int_app_cmd_ready),
       .cmd                (int_app_cmd),
