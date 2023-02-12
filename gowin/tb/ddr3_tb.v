@@ -73,7 +73,7 @@ module ddr3_tb ();
       int_app_cmd          <= 'd0;
       int_app_wdata_en     <= 'd0;
       int_app_wdata_end    <= 'd0;
-      int_app_wdata_mask   <= 'd0;
+      int_app_wdata_mask   <= 'hFFFF;
       int_app_wdata        <= 'd0;
       wt_cnt               <= 'd0;
       rdata_ptr            <= 'd0;
@@ -93,6 +93,7 @@ module ddr3_tb ();
             int_app_wdata_en     <= 1'd1;
             int_app_wdata_end    <= 1'd1;
             int_app_wdata        <= 128'h0123_4567_890A_BCDE_FEDC_BA98_7654_3210;
+            int_app_wdata_mask   <= int_app_wdata_mask << 1;
             wt_cnt               <= wt_cnt + 1'd1;
             state                <= FILL_WT;
           end
@@ -107,10 +108,11 @@ module ddr3_tb ();
               wt_cnt            <= {DATA_ADDR{1'd0}};
               state             <= CHECK_INIT;
             end else begin
-              int_app_wdata_en  <= 1'd1;
-              int_app_wdata_end <= 1'd1;
-              int_app_wdata     <= int_app_wdata + 1'd1;
-              wt_cnt            <= wt_cnt + 1'd1;
+              int_app_wdata_en   <= 1'd1;
+              int_app_wdata_end  <= 1'd1;
+              int_app_wdata      <= int_app_wdata + 1'd1;
+              int_app_wdata_mask <= int_app_wdata_mask << 1;
+              wt_cnt             <= wt_cnt + 1'd1;
             end
           end
         end

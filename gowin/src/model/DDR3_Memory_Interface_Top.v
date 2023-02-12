@@ -68,7 +68,8 @@ module DDR3_Memory_Interface_Top (
 
   reg [WIDTH-1:0] int_wt_mask;
   reg [      1:0] int_cmd;
-  reg [      7:0] init_calib_cnt;
+  reg [     27:0] int_addr;
+  reg [      2:0] init_calib_cnt;
   reg             int_wt_data_ready;
   reg             int_rd_data_valid;
   reg [WIDTH-1:0] int_rd_data;
@@ -83,8 +84,8 @@ module DDR3_Memory_Interface_Top (
   assign init_calib_complete = int_init_calib_complete;
   assign clk_out             = int_clk_out;
 
-  // 128 x 128bits
-  reg [WIDTH-1:0] mem[0:WIDTH-1];
+  // 128 x 8bits
+  reg [15:0] mem[0:WIDTH-1];
 
 
   initial begin
@@ -115,7 +116,7 @@ module DDR3_Memory_Interface_Top (
     if (~rst_n) begin
       int_init_calib_complete <= 'd0;
       init_calib_cnt          <= 'd0;
-    end else if (init_calib_cnt == 8'd255) begin
+    end else if (init_calib_cnt == 3'd7) begin
       int_init_calib_complete <= 'd1;
     end else begin
       init_calib_cnt <= init_calib_cnt + 1'd1;
@@ -124,21 +125,23 @@ module DDR3_Memory_Interface_Top (
 
   always @(posedge memory_clk or negedge rst_n) begin
     if (~rst_n) begin
-      int_cmd <= WT_CMD;
+      int_cmd  <= WT_CMD;
+      int_addr <= 'd0;
     end else if (cmd_en) begin
-      int_cmd <= cmd;
+      int_cmd  <= cmd;
+      int_addr <= addr;
     end
   end
 
   always @(posedge memory_clk or negedge rst_n) begin
     if (~rst_n) begin
-      int_wt_data_ready <= 1'd0;
-      int_rd_data_valid <= 1'd0;
+      int_wt_data_ready <= 1'd1;
+      int_rd_data_valid <= 1'd1;
     end else begin
       if (int_cmd == WT_CMD) begin
         int_wt_data_ready <= 1'd1;
         int_rd_data_valid <= 1'd0;
-      end else begin
+      end else if (int_cmd == RD_CMD) begin
         int_wt_data_ready <= 1'd0;
         int_rd_data_valid <= 1'd1;
       end
@@ -164,18 +167,42 @@ module DDR3_Memory_Interface_Top (
     int_wt_mask[127:120] = {8{~wr_data_mask[15]}};
   end
 
-  always @(posedge memory_clk) begin
+  always @(posedge clk_out) begin
     if (int_cmd == WT_CMD && wr_data_en) begin
-      mem[addr] <= wr_data & int_wt_mask;
+      mem[int_addr]   <= (wr_data[15:0] & int_wt_mask[15:0]);
+      mem[int_addr+1] <= (wr_data[31:16] & int_wt_mask[31:16]);
+      mem[int_addr+2] <= (wr_data[47:40] & int_wt_mask[47:40]);
+      mem[int_addr+3] <= (wr_data[63:56] & int_wt_mask[63:56]);
+      mem[int_addr+4] <= (wr_data[79:72] & int_wt_mask[79:72]);
+      mem[int_addr+5] <= (wr_data[95:88] & int_wt_mask[95:88]);
+      mem[int_addr+6] <= (wr_data[119:104] & int_wt_mask[119:104]);
+      mem[int_addr+7] <= (wr_data[127:120] & int_wt_mask[127:120]);
+      int_addr        <= int_addr + 4'd8;
     end
   end
 
-  always @(posedge memory_clk or negedge rst_n) begin
+  always @(posedge clk_out or negedge rst_n) begin
     if (~rst_n) begin
       int_rd_data <= {WIDTH{1'd0}};
     end
     if (int_cmd == RD_CMD) begin
-      int_rd_data <= mem[addr];
+      int_rd_data[7:0]     <= mem[int_addr][7:0];
+      int_rd_data[15:8]    <= mem[int_addr][15:8];
+      int_rd_data[23:16]   <= mem[int_addr+1][7:0];
+      int_rd_data[31:24]   <= mem[int_addr+1][15:8];
+      int_rd_data[39:32]   <= mem[int_addr+2][7:0];
+      int_rd_data[47:40]   <= mem[int_addr+2][15:8];
+      int_rd_data[55:48]   <= mem[int_addr+3][7:0];
+      int_rd_data[63:56]   <= mem[int_addr+3][15:8];
+      int_rd_data[71:64]   <= mem[int_addr+4][7:0];
+      int_rd_data[79:72]   <= mem[int_addr+4][15:8];
+      int_rd_data[87:80]   <= mem[int_addr+5][7:0];
+      int_rd_data[95:88]   <= mem[int_addr+5][15:8];
+      int_rd_data[103:96]  <= mem[int_addr+6][7:0];
+      int_rd_data[111:104] <= mem[int_addr+6][15:8];
+      int_rd_data[119:112] <= mem[int_addr+7][7:0];
+      int_rd_data[127:120] <= mem[int_addr+7][15:8];
+      int_addr             <= int_addr + 4'd8;
     end
   end
 endmodule
