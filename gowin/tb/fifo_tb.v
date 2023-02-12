@@ -51,7 +51,7 @@ module fifo_tb ();
     end
   end
 
-  FIFO_HS_CMD #(
+  FIFO_HS #(
       .WIDTH(WIDTH),
       .DEPTH(DEPTH)
   ) fifo_hs_cmd (

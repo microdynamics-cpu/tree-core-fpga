@@ -1,15 +1,17 @@
-module rsp_fifo (
+module rsp_fifo #(
+    parameter DATA_WIDTH = 128
+) (
     input rstn,
 
-    input          push_clk,
-    input          io_push_valid,
-    output         io_push_ready,
-    input  [127:0] io_push_rsp_data,
+    input                   push_clk,
+    input                   io_push_valid,
+    output                  io_push_ready,
+    input  [DATA_WIDTH-1:0] io_push_rsp_data,
 
-    input          pop_clk,
-    input          io_pop_valid,
-    output         io_pop_ready,
-    output [127:0] io_pop_rsp_data
+    input                   pop_clk,
+    input                   io_pop_valid,
+    output                  io_pop_ready,
+    output [DATA_WIDTH-1:0] io_pop_rsp_data
 );
 
   wire empty;
@@ -17,7 +19,10 @@ module rsp_fifo (
   assign io_push_ready = rstn && (~full);
   assign io_pop_ready  = rstn && (~empty);
 
-  FIFO_HS_RSP fifo_hs_rsp (
+  FIFO_HS #(
+      .WIDTH(DATA_WIDTH)
+  ) u_fifo_hs_rsp (
+      // FIFO_HS_RSP u_fifo_hs_rsp ( // for fpga
       .Data (io_push_rsp_data),
       .Reset(~rstn),
       .WrClk(push_clk),

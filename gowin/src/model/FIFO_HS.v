@@ -1,4 +1,4 @@
-module FIFO_HS_CMD #(
+module FIFO_HS #(
     parameter WIDTH = 16,
     parameter DEPTH = 4
 ) (
