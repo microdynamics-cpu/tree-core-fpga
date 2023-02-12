@@ -122,6 +122,7 @@ module axi4_bridge_tb ();
               fifo_cmd_valid <= 1'd1;
             end else begin
               wt_cnt           <= wt_cnt + 1'd1;
+              fifo_cmd_type    <= FIFO_WT_TYPE;
               fifo_cmd_wt_data <= fifo_cmd_wt_data + 1'd1;
               fifo_cmd_wt_mask <= fifo_cmd_wt_mask << 1;
             end
@@ -131,7 +132,7 @@ module axi4_bridge_tb ();
           if (fifo_cmd_valid && fifo_cmd_ready) begin
             state              <= CHECK_RD;
             rd_cnt             <= rd_cnt + 1'd1;
-            fifo_cmd_type      <= FIFO_CMD_TYPE;
+            fifo_cmd_type      <= FIFO_RD_TYPE;
             fifo_cmd_addr      <= 'd0;
             fifo_cmd_burst_cnt <= DATA_NUM - 1;
             fifo_rsp_valid     <= 1'd1;
