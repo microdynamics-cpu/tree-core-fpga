@@ -12,10 +12,10 @@
       <img alt="stars" src="https://img.shields.io/github/stars/microdynamics-cpu/tree-core-fpga?color=blue&style=flat-square" />
     </a>
     <a href="https://github.com/microdynamics-cpu/tree-core-fpga">
-      <img src="https://img.shields.io/badge/total%20lines-0k-red?style=flat-square">
+      <img src="https://img.shields.io/badge/total%20lines-3k-red?style=flat-square">
     </a>
     <a href="https://github.com/YosysHQ">
-      <img src="https://img.shields.io/badge/toolchain-vivado-red?style=flat-square">
+      <img src="https://img.shields.io/badge/toolchain-iverilog%20gtkwave%20|%20vivado-red?style=flat-square">
   </a>
     <a href="./CONTRIBUTING.md">
       <img src="https://img.shields.io/badge/contribution-welcome-brightgreen?style=flat-square">
