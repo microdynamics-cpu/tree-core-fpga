@@ -12,7 +12,7 @@ module cmd_fifo_tb ();
     clk_100MHz = 1'b0;
     rstn       = 1'b0;
     #97 rstn = 1;  // 97 for aync to clk edge
-    #500 $finish;
+    #3000 $finish;
   end
 
 
@@ -40,10 +40,10 @@ module cmd_fifo_tb ();
   wire                  wt_clk;
   wire                  rd_clk;
 
-  reg  [           1:0] wt_state;
-  reg  [           1:0] rd_state;
+  reg                   wt_rd_sw;
+  reg  [           2:0] addr_offset;
+  reg  [           1:0] state;
   reg  [           3:0] wt_cnt;
-  reg  [           3:0] rd_cnt;
   reg                   push_valid;
   wire                  push_ready;
   reg  [TYPE_WIDTH-1:0] push_type;
@@ -65,7 +65,9 @@ module cmd_fifo_tb ();
 
   always @(posedge wt_clk or negedge rstn) begin
     if (~rstn) begin
-      wt_state       <= FSM_IDLE;
+      state          <= FSM_IDLE;
+      wt_rd_sw       <= 'd0;
+      addr_offset    <= 'd0;
       wt_cnt         <= 'd0;
       push_valid     <= 'd0;
       push_type      <= FIFO_IDE_TYPE;
@@ -74,20 +76,29 @@ module cmd_fifo_tb ();
       push_wt_data   <= 'd0;
       push_wt_mask   <= 'hFFFF;
     end else begin
-      case (wt_state)
+      case (state)
         FSM_IDLE: begin
-          wt_state       <= FSM_WT;
-          wt_cnt         <= 'd0;
-          push_valid     <= 'd1;  // ?
-          push_type      <= FIFO_WT_TYPE;
-          push_addr      <= 'd0;
-          push_burst_cnt <= 'd7;
-          push_wt_data   <= 128'h0123_4567_890A_BCDE_FEDC_BA98_7654_3210;
-          push_wt_mask   <= push_wt_mask << 1;
+          wt_cnt     <= 'd0;
+          push_valid <= 'd1;
+          push_addr  <= (wt_rd_sw == 0) ? addr_offset : push_addr;
+          if (~wt_rd_sw) begin
+            state          <= FSM_WT;
+            push_type      <= FIFO_WT_TYPE;
+            push_burst_cnt <= 'd7;
+            push_wt_data   <= 128'h0123_4567_890A_BCDE_FEDC_BA98_7654_3210;
+            push_wt_mask   <= push_wt_mask << 1;
+          end else begin
+            state          <= FSM_RD;
+            push_type      <= FIFO_RD_TYPE;
+            push_burst_cnt <= 'd7;
+          end
+          wt_rd_sw    <= ~wt_rd_sw;
+          addr_offset <= addr_offset + 1'd1;
         end
         FSM_WT: begin
           if (push_valid && push_ready) begin
             if (wt_cnt == push_burst_cnt) begin
+              state          <= FSM_IDLE;
               wt_cnt         <= 'd0;
               push_valid     <= 'd0;
               push_type      <= FIFO_IDE_TYPE;
@@ -102,8 +113,13 @@ module cmd_fifo_tb ();
             end
           end
         end
+        FSM_RD: begin
+          if (push_valid && push_ready) begin
+            state <= FSM_IDLE;
+          end
+        end
         default: begin
-          wt_state <= FSM_IDLE;
+          state <= FSM_IDLE;
         end
       endcase
     end
@@ -111,9 +127,7 @@ module cmd_fifo_tb ();
 
   always @(posedge rd_clk or negedge rstn) begin
     if (~rstn) begin
-      rd_cnt    <= 'd0;
       pop_valid <= 'd1;
-    end else begin
     end
   end
 
