@@ -10,33 +10,35 @@ module fifo_top (
       .clkin (clk)
   );
 
-  wire         wen;
-  wire         ren;
-  wire         is_empty;
-  wire         is_full;
-  wire [127:0] rdata;
+  wire        wen;
+  wire        ren;
+  wire        empty;
+  wire        full;
+  wire [63:0] wdata;
+  wire [63:0] rdata;
 
   fifo_tester u_fifo_tester (
       .clk    (clk),
+      .wdata  (wdata),
       .clk_mem(clk_mem),
       .rstn   (lock),
       .wen    (wen),
       .ren    (ren),
       .rdata  (rdata),
-      .empty  (is_empty),
-      .full   (is_full)
+      .empty  (empty),
+      .full   (full)
   );
 
   FIFO_HS_WT_Top u_wt_fifo (
-      .Data (64'h1234_5678),
+      .Data (wdata),
       .Reset(~lock),
       .WrClk(clk),
       .RdClk(clk_mem),
       .WrEn (wen),
       .RdEn (ren),
       .Q    (rdata),
-      .Empty(is_empty),
-      .Full (is_full)
+      .Empty(empty),
+      .Full (full)
   );
 
 endmodule
