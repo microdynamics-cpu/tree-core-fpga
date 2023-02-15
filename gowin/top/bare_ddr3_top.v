@@ -34,16 +34,13 @@ module bare_ddr3_top (
   wire         init_calib_complete;
   wire [  5:0] app_burst_number;
   wire [ 27:0] app_addr;
-  // ddr3 cmd channel
   wire         app_cmd_en;
   wire [  2:0] app_cmd;
   wire         app_cmd_rdy;
-  // ddr3 w channel
   wire         app_wdata_en;
   wire         app_wdata_end;
   wire [127:0] app_wdata;
   wire         app_wdata_rdy;
-  // ddr3 r channel
   wire         app_rdata_valid;
   wire         app_rdata_end;
   wire [127:0] app_rdata;
