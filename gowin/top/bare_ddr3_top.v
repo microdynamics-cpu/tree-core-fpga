@@ -15,7 +15,8 @@ module bare_ddr3_top (
     inout  [ 1:0] ddr_dqs,
     inout  [ 1:0] ddr_dqs_n,
 
-    input clk
+    input  clk,
+    output txp
 );
 
   assign ddr_cs = 1'b0;
@@ -30,10 +31,10 @@ module bare_ddr3_top (
       .clkin (clk)
   );
 
-
+  wire         rstn;
   wire         init_calib_complete;
   wire [  5:0] app_burst_number;
-  wire [ 27:0] app_addr;
+  wire [ 26:0] app_addr;
   wire         app_cmd_en;
   wire [  2:0] app_cmd;
   wire         app_cmd_rdy;
@@ -50,7 +51,7 @@ module bare_ddr3_top (
       .memory_clk         (clk_mem),
       .clk                (clk),
       .pll_lock           (lock),
-      .rst_n              (lock),
+      .rst_n              (rstn),
       .app_burst_number   (app_burst_number),
       .cmd_ready          (app_cmd_rdy),
       .cmd                (app_cmd),
@@ -90,9 +91,11 @@ module bare_ddr3_top (
       .IO_ddr_dqs_n (ddr_dqs_n)
   );
 
+//   bare_random_tester u_bare_random_tester (
   bare_tester u_bare_tester (
-      .clk                (clk_mem_div4),
-      .rstn               (lock),
+      .clk                (clk),
+      .clk_x1             (clk_mem_div4),
+      .rstn               (rstn),
       .init_calib_complete(init_calib_complete),
       .app_burst_number   (app_burst_number),
       .app_addr           (app_addr),
@@ -105,7 +108,7 @@ module bare_ddr3_top (
       .app_wdata_rdy      (app_wdata_rdy),
       .app_rdata_valid    (app_rdata_valid),
       .app_rdata_end      (app_rdata_end),
-      .app_rdata          (app_rdata)
+      .app_rdata          (app_rdata),
+      .txp                (txp)
   );
-
 endmodule
