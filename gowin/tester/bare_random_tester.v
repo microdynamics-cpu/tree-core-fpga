@@ -1,25 +1,21 @@
 module bare_random_tester (
-    input      clk,
-    input      clk_x1,
-    output reg rstn,
-
-    input                init_calib_complete,
-    output reg  [   5:0] app_burst_number,
-    output wire [27-1:0] app_addr,
-    output reg           app_cmd_en,
-    output reg  [   2:0] app_cmd,
-    input                app_cmd_rdy,
-
-
-    output reg           app_wdata_en,
-    output reg           app_wdata_end,
-    output reg [128-1:0] app_wdata,
-    input                app_wdata_rdy,
-    input                app_rdata_valid,
-    input                app_rdata_end,
-    input      [128-1:0] app_rdata,
-
-    output txp
+    input               clk,
+    input               clk_x1,
+    output reg          rstn,
+    input               init_calib_complete,
+    output reg  [  5:0] app_burst_number,
+    output wire [ 26:0] app_addr,
+    output reg          app_cmd_en,
+    output reg  [  2:0] app_cmd,
+    input               app_cmd_rdy,
+    output reg          app_wdata_en,
+    output reg          app_wdata_end,
+    output reg  [127:0] app_wdata,
+    input               app_wdata_rdy,
+    input               app_rdata_valid,
+    input               app_rdata_end,
+    input       [127:0] app_rdata,
+    output              txp
 );
 
   //Reset Controll -------------------------------------------
