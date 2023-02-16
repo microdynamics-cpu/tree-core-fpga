@@ -10,6 +10,7 @@ module bare_random_tester (
     input               app_cmd_rdy,
     output reg          app_wdata_en,
     output reg          app_wdata_end,
+    output              app_wdata_mask,
     output reg  [127:0] app_wdata,
     input               app_wdata_rdy,
     input               app_rdata_valid,
@@ -18,6 +19,7 @@ module bare_random_tester (
     output              txp
 );
 
+  assign app_wdata_mask = 'd0;
   //Reset Controll -------------------------------------------
   reg [31:0] time_counter;  //every 100s, perform a reset.
 

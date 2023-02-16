@@ -40,6 +40,7 @@ module bare_ddr3_top (
   wire         app_cmd_rdy;
   wire         app_wdata_en;
   wire         app_wdata_end;
+  wire [ 15:0] app_wdata_mask;
   wire [127:0] app_wdata;
   wire         app_wdata_rdy;
   wire         app_rdata_valid;
@@ -61,7 +62,7 @@ module bare_ddr3_top (
       .wr_data            (app_wdata),
       .wr_data_en         (app_wdata_en),
       .wr_data_end        (app_wdata_end),
-      .wr_data_mask       (16'h0000),
+      .wr_data_mask       (app_wdata_mask),
       .rd_data            (app_rdata),
       .rd_data_valid      (app_rdata_valid),
       .rd_data_end        (app_rdata_end),
@@ -91,7 +92,7 @@ module bare_ddr3_top (
       .IO_ddr_dqs_n (ddr_dqs_n)
   );
 
-//   bare_random_tester u_bare_random_tester (
+  //   bare_random_tester u_bare_random_tester (
   bare_tester u_bare_tester (
       .clk                (clk),
       .clk_x1             (clk_mem_div4),
@@ -104,6 +105,7 @@ module bare_ddr3_top (
       .app_cmd_rdy        (app_cmd_rdy),
       .app_wdata_en       (app_wdata_en),
       .app_wdata_end      (app_wdata_end),
+      .app_wdata_mask     (app_wdata_mask),
       .app_wdata          (app_wdata),
       .app_wdata_rdy      (app_wdata_rdy),
       .app_rdata_valid    (app_rdata_valid),
