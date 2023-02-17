@@ -112,12 +112,14 @@ module bare_tester (
     if (rng_tick) begin
       rng_i   <= {rng_i[126:0], rng_i[68] ^ rng_i[67] ^ rng_i[66] ^ rng_i[63]};
       // mask_i  <= {mask_i[14:0], mask_i[11] ^ mask_i[10] ^ mask_i[4]};
+      mask_i  <= {mask_i[14:0], mask_i[15]};
       rng_cnt <= rng_cnt + 7'd1;
     end
 
     if (rng_rst) begin
       rng_i   <= rng_init_pattern;
       mask_i  <= 'hFFFE;
+      // mask_i  <= 'hF8FC;
       rng_cnt <= 7'd0;
     end
   end
@@ -310,7 +312,7 @@ module bare_tester (
               rng_tick <= 1'b1;
 
               if (rng_cnt == 7'd0) begin
-                if (rd_buf_d2 != (rng & ext_mask)) begin
+                if ((rd_buf_d2 & ext_mask) != (rng & ext_mask)) begin
                   work_state <= WORK_CHECK_FAIL;
                 end
 
@@ -363,11 +365,11 @@ module bare_tester (
             end
             FILL_WRT: begin
               if (app_wdata_rdy) begin
-                app_wdata_en  <= 1'b1;
-                app_wdata_end <= 1'b1;
-                app_wdata     <= rng_inv;
-
-                wt_cnt        <= wt_cnt + 6'd1;
+                app_wdata_en   <= 1'b1;
+                app_wdata_end  <= 1'b1;
+                app_wdata      <= rng_inv;
+                app_wdata_mask <= mask;
+                wt_cnt         <= wt_cnt + 6'd1;
                 if (wt_cnt == BURST_LEN - 1) begin
                   fill_state <= FILL_CMD;
                   wt_cnt     <= 6'd0;
@@ -440,7 +442,7 @@ module bare_tester (
             CHECK_RNG: begin
               rng_tick <= 1'b1;
               if (rng_cnt == 7'd0) begin
-                if (rd_buf_d2 != rng_inv) begin
+                if ((rd_buf_d2 & ext_mask) != (rng_inv & ext_mask)) begin
                   work_state <= WORK_CHECK_FAIL;
                 end
 
@@ -478,11 +480,12 @@ module bare_tester (
   assign print_clk = clk;
   assign txp       = uart_txp;
 
-  reg  [2:0]                       state_d1;
-  reg  [2:0]                       state_d2;
-  reg  [2:0]                       state_old;
-  wire [2:0] state_new = state_d2;
+  reg  [ 2:0]                       state_d1;
+  reg  [ 2:0]                       state_d2;
+  reg  [ 2:0]                       state_old;
+  wire [ 2:0] state_new = state_d2;
 
+  reg  [31:0]                       data_tmp = 32'h21_22_23_24;
 
   always @(posedge clk) begin
     state_d2 <= state_d1;
@@ -492,8 +495,11 @@ module bare_tester (
       state_old <= state_new;
 
       if (state_old != state_new) begin
-        if (state_old == WORK_WAIT_INIT)
+        if (state_old == WORK_WAIT_INIT) begin
           `print("======DDR Memory Write/Read Test======\nDDR3 Init Complete\n", STR);
+          // `print(data_tmp, 4);
+          // `print(RNG_INIT_VAL, 16);
+        end
 
         if (state_new == WORK_FILL)
           if (ddr_size == DDR_SIZE_1G)
@@ -516,20 +522,21 @@ module bare_tester (
         if (state_new == WORK_INV_CHECK)
           `print("Write Finished\nBegin to Check...\n", STR);
 
-        if (state_new == WORK_CHECK_FAIL)
+        if (state_new == WORK_CHECK_FAIL) begin
           `print("Check Failed. Mismatch Occured\n", STR);
+        end
 
         if (state_new == WORK_FINAL) begin
-          if (error_bit)
+          if (error_bit) begin
             `print("Error Occured\n\n", STR);
-          else
+          end else
             `print("Check Finished without Mismatch\nTest Finished\n\n", STR);
         end
       end
     end
 
     if (rstn == 1'b0)
-      `print("Perform Reset\nAuto Reset Every 100s\n", STR);
+      `print("Reset DDR3 Test Every 100s\n", STR);
   end
 
 endmodule
