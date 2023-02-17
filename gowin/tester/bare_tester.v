@@ -35,6 +35,7 @@ module bare_tester (
   end
 
   localparam BURST_LEN = 8;
+  localparam BURST_LEN1 = 7;
 
   localparam WORK_WAIT_INIT = 4'd0;
   localparam WORK_DETECT_SIZE = 4'd1;
@@ -46,6 +47,7 @@ module bare_tester (
   localparam WORK_FINAL = 4'd7;
   localparam WORK_NA_FILL = 4'd8;
   localparam WORK_CC_FILL = 4'd9;
+  localparam WORK_CC_CHECK = 4'd10;
 
 
   localparam DETECT_SIZE_WR0 = 2'd0;
@@ -471,7 +473,123 @@ module bare_tester (
         end
 
         WORK_CC_FILL: begin
-          work_state <= WORK_FINAL;
+          app_burst_number <= BURST_LEN1 - 1;
+          rng_rst          <= 'd0;
+          rng_tick         <= 'd0;
+          rng_init_pattern <= RNG_INIT_VAL;
+
+          app_wdata_en     <= 'd0;
+          app_wdata_end    <= 'd0;
+          app_cmd_en       <= 'd0;
+          case (fill_state)
+            FILL_RST: begin
+              rng_rst      <= 1'd1;
+              int_app_addr <= 28'h000_0300 - BURST_LEN1 * 8;
+              fill_state   <= FILL_RNG;
+            end
+            FILL_RNG: begin
+              rng_tick <= 1'd1;
+              if (rng_cnt == 7'd127) begin
+                fill_state <= FILL_WRT;
+              end
+            end
+            FILL_WRT: begin
+              if (app_wdata_rdy) begin
+                app_wdata_en   <= 1'd1;
+                app_wdata_end  <= 1'd1;
+                app_wdata      <= rng;
+                app_wdata_mask <= mask;
+                wt_cnt         <= wt_cnt + 6'd1;
+                if (wt_cnt == BURST_LEN - 1) begin
+                  fill_state <= FILL_CMD;
+                  wt_cnt     <= 6'd0;
+                end else fill_state <= FILL_RNG;
+              end
+            end
+            FILL_CMD: begin
+              if (app_cmd_rdy) begin
+                app_cmd_en   <= 1'b1;
+                app_cmd      <= WR_CMD;
+                int_app_addr <= int_app_addr + BURST_LEN1 * 8;
+
+                fill_state   <= FILL_RNG;
+                if (ddr_size == DDR_SIZE_1G) begin
+                  if ({1'b0, int_app_addr} >= 28'h000_0500 - 28'd128) begin
+                    work_state <= WORK_CC_CHECK;
+                    fill_state <= FILL_RST;
+                  end
+                end else begin
+                  if ({1'b0, int_app_addr} >= 28'h800_0000 - 28'd128) begin
+                    work_state <= WORK_CC_CHECK;
+                    fill_state <= FILL_RST;
+                  end
+                end
+              end
+            end
+          endcase
+        end
+        WORK_CC_CHECK: begin
+          //perform the read cmd, then read the data and compare with the rng
+          app_burst_number <= BURST_LEN - 1;  //8-burst
+
+          rng_rst          <= 1'b0;
+          rng_tick         <= 1'b0;
+          rng_init_pattern <= RNG_INIT_VAL;
+
+          app_cmd_en       <= 1'b0;
+          case (check_state)
+            CHECK_RST: begin
+              rng_rst      <= 1'b1;
+              //set adr to the prev pos, so after add 64, it will be 0
+              int_app_addr <= 28'h000_0300 - BURST_LEN1 * 8;
+              check_state  <= CHECK_CMD;
+            end
+            CHECK_CMD: begin
+              if (app_cmd_rdy) begin
+                rng_tick     <= 1'b1;  //one more tick
+
+                app_cmd_en   <= 1'b1;
+                app_cmd      <= RD_CMD;
+                int_app_addr <= int_app_addr + BURST_LEN1 * 8;
+
+                check_state  <= CHECK_DAT;
+                rd_idx       <= 3'd0;
+              end
+            end
+            CHECK_DAT: begin
+              if (app_rdata_valid) begin
+                rd_data[rd_idx] <= app_rdata;
+                rd_idx          <= rd_idx + 3'd1;
+                if (rd_idx == BURST_LEN - 1) begin
+                  check_state <= CHECK_RNG;
+                end
+              end
+            end
+            CHECK_RNG: begin
+              rng_tick <= 1'b1;
+              if (rng_cnt == 7'd0) begin
+                if ((rd_buf_d2 & ext_mask) != (rng & ext_mask)) begin
+                  work_state <= WORK_CHECK_FAIL;
+                end
+
+                rd_idx <= rd_idx + 3'd1;
+                if (rd_idx == BURST_LEN - 1) begin
+                  check_state <= CHECK_CMD;
+                  if (ddr_size == DDR_SIZE_1G) begin
+                    if ({1'b0, int_app_addr} >= 28'h000_0500 - 28'd64) begin
+                      work_state  <= WORK_NA_FILL;
+                      check_state <= CHECK_RST;
+                    end
+                  end else begin
+                    if ({1'b0, int_app_addr} >= 28'h800_0000 - 28'd64) begin
+                      work_state  <= WORK_NA_FILL;
+                      check_state <= CHECK_RST;
+                    end
+                  end
+                end
+              end
+            end
+          endcase
         end
         WORK_NA_FILL: begin
           work_state <= WORK_FINAL;
@@ -537,10 +655,13 @@ module bare_tester (
           `print("Check Failed. Mismatch Occured\n", STR);
         end
 
-
         if (state_new == WORK_CC_FILL) begin
           `print("Check SUCCEEDED!\n\n===8-Burst Cross Column Write Test===\nBegin Write...\n",
                  STR);
+        end
+
+        if (state_new == WORK_CC_CHECK) begin
+          `print("Write Finished\nBegin to Check...\n", STR);
         end
 
         if (state_new == WORK_NA_FILL) begin
