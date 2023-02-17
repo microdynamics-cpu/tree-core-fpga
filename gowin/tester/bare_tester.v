@@ -10,7 +10,7 @@ module bare_tester (
     input               app_cmd_rdy,
     output reg          app_wdata_en,
     output reg          app_wdata_end,
-    output reg          app_wdata_mask,
+    output reg  [ 15:0] app_wdata_mask,
     output reg  [127:0] app_wdata,
     input               app_wdata_rdy,
     input               app_rdata_valid,
@@ -36,14 +36,17 @@ module bare_tester (
 
   localparam BURST_LEN = 8;
 
-  localparam WORK_WAIT_INIT = 3'd0;
-  localparam WORK_DETECT_SIZE = 3'd1;
-  localparam WORK_FILL = 3'd2;
-  localparam WORK_CHECK = 3'd3;
-  localparam WORK_INV_FILL = 3'd4;
-  localparam WORK_INV_CHECK = 3'd5;
-  localparam WORK_CHECK_FAIL = 3'd6;
-  localparam WORK_FINAL = BURST_LEN - 1;
+  localparam WORK_WAIT_INIT = 4'd0;
+  localparam WORK_DETECT_SIZE = 4'd1;
+  localparam WORK_FILL = 4'd2;
+  localparam WORK_CHECK = 4'd3;
+  localparam WORK_INV_FILL = 4'd4;
+  localparam WORK_INV_CHECK = 4'd5;
+  localparam WORK_CHECK_FAIL = 4'd6;
+  localparam WORK_FINAL = 4'd7;
+  localparam WORK_NA_FILL = 4'd8;
+  localparam WORK_CC_FILL = 4'd9;
+
 
   localparam DETECT_SIZE_WR0 = 2'd0;
   localparam DETECT_SIZE_WR1 = 2'd1;
@@ -70,7 +73,7 @@ module bare_tester (
   localparam DET_SIZE_WR_VAL2 = 128'h5329_0AB2_FA05_00FF_89AB_CDEF_0123_4567;
   localparam RNG_INIT_VAL = 128'h0123_4567_890A_BCDE_FEDC_BA98_7654_3210;
 
-  reg [ 2:0] work_state;
+  reg [ 3:0] work_state;
   reg [ 1:0] detect_state;
   reg [ 1:0] fill_state;
   reg [ 1:0] check_state;
@@ -452,12 +455,12 @@ module bare_tester (
 
                   if (ddr_size == DDR_SIZE_1G) begin
                     if ({1'b0, int_app_addr} == 28'h400_0000 - 28'd64) begin
-                      work_state  <= WORK_FINAL;
+                      work_state  <= WORK_CC_FILL;
                       check_state <= CHECK_RST;
                     end
                   end else begin
                     if ({1'b0, int_app_addr} == 28'h800_0000 - 28'd64) begin
-                      work_state  <= WORK_FINAL;
+                      work_state  <= WORK_CC_FILL;
                       check_state <= CHECK_RST;
                     end
                   end
@@ -467,6 +470,12 @@ module bare_tester (
           endcase
         end
 
+        WORK_CC_FILL: begin
+          work_state <= WORK_FINAL;
+        end
+        WORK_NA_FILL: begin
+          work_state <= WORK_FINAL;
+        end
         WORK_CHECK_FAIL: begin
         end
         WORK_FINAL: begin
@@ -480,10 +489,10 @@ module bare_tester (
   assign print_clk = clk;
   assign txp       = uart_txp;
 
-  reg  [ 2:0]                       state_d1;
-  reg  [ 2:0]                       state_d2;
-  reg  [ 2:0]                       state_old;
-  wire [ 2:0] state_new = state_d2;
+  reg  [ 3:0]                       state_d1;
+  reg  [ 3:0]                       state_d2;
+  reg  [ 3:0]                       state_old;
+  wire [ 3:0] state_new = state_d2;
 
   reg  [31:0]                       data_tmp = 32'h21_22_23_24;
 
@@ -511,26 +520,38 @@ module bare_tester (
                 "DDR Size Detect: 2Gb(128M x 16bits)\n\n===8-Burst Aligned Write Test===\nBegin Write...\n",
                 STR);
 
-        if (state_new == WORK_CHECK)
+        if (state_new == WORK_CHECK) begin
           `print("Write Finished\nBegin to Check...\n", STR);
+        end
 
-        if (state_new == WORK_INV_FILL)
-          `print(
-              "Check Finished without Mismatch\n\n===8-Burst Aligned Inverse Write Test===\nBegin Write...\n",
-              STR);
+        if (state_new == WORK_INV_FILL) begin
+          `print("Check SUCCEEDED!\n\n===8-Burst Aligned Inverse Write Test===\nBegin Write...\n",
+                 STR);
+        end
 
-        if (state_new == WORK_INV_CHECK)
+        if (state_new == WORK_INV_CHECK) begin
           `print("Write Finished\nBegin to Check...\n", STR);
+        end
 
         if (state_new == WORK_CHECK_FAIL) begin
           `print("Check Failed. Mismatch Occured\n", STR);
+        end
+
+
+        if (state_new == WORK_CC_FILL) begin
+          `print("Check SUCCEEDED!\n\n===8-Burst Cross Column Write Test===\nBegin Write...\n",
+                 STR);
+        end
+
+        if (state_new == WORK_NA_FILL) begin
+          `print("Check SUCCEEDED!\n\n===8-Burst Not-Aligned Write Test===\nBegin Write...\n", STR);
         end
 
         if (state_new == WORK_FINAL) begin
           if (error_bit) begin
             `print("Error Occured\n\n", STR);
           end else
-            `print("Check Finished without Mismatch\nTest Finished\n\n", STR);
+            `print("Check SUCCEEDED!\nTest Finished\n\n", STR);
         end
       end
     end
