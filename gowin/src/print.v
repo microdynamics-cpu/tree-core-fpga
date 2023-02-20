@@ -32,12 +32,12 @@ assign hex_lib[4'h6] = 8'h36;
 assign hex_lib[4'h7] = 8'h37;
 assign hex_lib[4'h8] = 8'h38;
 assign hex_lib[4'h9] = 8'h39;
-assign hex_lib[4'hA] = 8'h61;
-assign hex_lib[4'hB] = 8'h62;
-assign hex_lib[4'hC] = 8'h63;
-assign hex_lib[4'hD] = 8'h64;
-assign hex_lib[4'hE] = 8'h65;
-assign hex_lib[4'hF] = 8'h66;
+assign hex_lib[4'hA] = 8'h41;
+assign hex_lib[4'hB] = 8'h42;
+assign hex_lib[4'hC] = 8'h43;
+assign hex_lib[4'hD] = 8'h44;
+assign hex_lib[4'hE] = 8'h45;
+assign hex_lib[4'hF] = 8'h46;
 
 //always block to handle the print task
 always @(posedge print_clk) begin
