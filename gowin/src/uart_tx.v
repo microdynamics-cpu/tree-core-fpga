@@ -36,7 +36,6 @@ module uart_tx (
   end
 
   assign clk_tx = (clk_txcnt == 0);
-
   always @(posedge clk) begin
     if (clk_txcnt >= TX_CLK_MAX) clk_txcnt <= 'd0;
     else clk_txcnt <= clk_txcnt + 1'd1;
