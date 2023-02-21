@@ -664,6 +664,15 @@ module bare_tester (
           `print("Write Finished\nBegin to Check...\n", STR);
         end
 
+        // if (state_new == WORK_CR_FILL) begin
+        //   `print("Check SUCCEEDED!\n\n===8-Burst Cross Row Write Test===\nBegin Write...\n",
+        //          STR);
+        // end
+
+        // if (state_new == WORK_CR_CHECK) begin
+        //   `print("Write Finished\nBegin to Check...\n", STR);
+        // end
+
         if (state_new == WORK_NA_FILL) begin
           `print("Check SUCCEEDED!\n\n===8-Burst Not-Aligned Write Test===\nBegin Write...\n", STR);
         end
