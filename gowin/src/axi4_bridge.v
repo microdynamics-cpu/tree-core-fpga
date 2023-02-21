@@ -23,20 +23,20 @@ module axi4_bridge #(
     output [DATA_WIDTH-1:0] io_fifo_rsp_data,
 
     // ddr3 master
-    output reg [BRST_WIDTH-1:0] io_app_burst_number,
-    input                       io_app_cmd_ready,
-    output reg [           2:0] io_app_cmd,
-    output reg                  io_app_cmd_en,
-    output reg [ADDR_WIDTH-1:0] io_app_addr,
-    input                       io_app_wdata_ready,
-    output reg [DATA_WIDTH-1:0] io_app_wdata,
-    output reg                  io_app_wdata_en,
-    output reg                  io_app_wdata_end,
-    output reg [MASK_WIDTH-1:0] io_app_wdata_mask,
-    input      [DATA_WIDTH-1:0] io_app_rdata,
-    input                       io_app_rdata_valid,
-    input                       io_app_rdata_end,           // no used
-    input                       io_app_init_calib_complete
+    output [BRST_WIDTH-1:0] io_app_burst_number,
+    input                   io_app_cmd_ready,
+    output [           2:0] io_app_cmd,
+    output                  io_app_cmd_en,
+    output [ADDR_WIDTH-1:0] io_app_addr,
+    input                   io_app_wdata_ready,
+    output [DATA_WIDTH-1:0] io_app_wdata,
+    output                  io_app_wdata_en,
+    output                  io_app_wdata_end,
+    output [MASK_WIDTH-1:0] io_app_wdata_mask,
+    input  [DATA_WIDTH-1:0] io_app_rdata,
+    input                   io_app_rdata_valid,
+    input                   io_app_rdata_end,           // no used
+    input                   io_app_init_calib_complete
 );
 
   localparam FIFO_IDE_TYPE = 2'd0;
@@ -58,67 +58,36 @@ module axi4_bridge #(
   wire                  push_rsp_ready;
   wire [DATA_WIDTH-1:0] push_rsp_data;
 
-
-  reg                   int_cmd_en;
+  reg                   cmd_en;
   reg  [  BRST_WIDTH:0] burst_cnt;  // for compare with 64 burst + 1
+  reg                   trans_done;
   wire                  app_wt_fire;
   wire                  app_rd_fire;
   wire                  app_data_fire;
 
-  assign pop_cmd_valid  = io_app_init_calib_complete && io_app_cmd_ready && io_app_wdata_ready;
-  assign push_rsp_valid = io_app_rdata_valid;  // end is same as valid, not used
-  assign push_rsp_data  = (push_rsp_valid && push_rsp_ready) ? io_app_rdata : 'd0;
+  assign pop_cmd_valid       = io_app_init_calib_complete && io_app_cmd_ready && io_app_wdata_ready;
+  assign push_rsp_valid      = io_app_rdata_valid;
+  assign push_rsp_data       = (push_rsp_valid && push_rsp_ready) ? io_app_rdata : 'd0;
 
-  assign app_wt_fire    = io_app_wdata_en && io_app_wdata_ready;
-  assign app_rd_fire    = io_app_rdata_valid;
-  assign app_data_fire  = app_wt_fire || app_rd_fire;
+  assign io_app_burst_number = pop_cmd_burst_cnt;
+  assign io_app_cmd          = (pop_cmd_type == FIFO_RD_TYPE) ? DDR_RD_CMD : DDR_WT_CMD;
+  assign io_app_cmd_en       = cmd_en;
+  assign io_app_addr         = pop_cmd_addr;
+  assign io_app_wdata        = pop_cmd_wt_data;
+  assign io_app_wdata_en     = pop_cmd_ready && (burst_cnt != io_app_burst_number - 1'd1);
+  assign io_app_wdata_end    = pop_cmd_ready && (burst_cnt != io_app_burst_number - 1'd1);
+  assign io_app_wdata_mask   = pop_cmd_wt_mask;
+
+  assign app_wt_fire         = (io_app_cmd == DDR_WT_CMD) && io_app_wdata_en && io_app_wdata_ready;
+  assign app_rd_fire         = (io_app_cmd == DDR_RD_CMD) && io_app_rdata_valid;
+  assign app_data_fire       = app_wt_fire || app_rd_fire;
 
   always @(posedge clk_ref or negedge rstn) begin
     if (~rstn) begin
-      io_app_burst_number <= 'd0;
-      io_app_cmd          <= DDR_WT_CMD;
-      io_app_cmd_en       <= 'd0;
-      io_app_addr         <= 'd0;
-      io_app_wdata        <= 'd0;
-      io_app_wdata_en     <= 'd0;
-      io_app_wdata_end    <= 'd0;
-      io_app_wdata_mask   <= 'hFFFF;
-      burst_cnt           <= 'd0;
+      cmd_en     <= 'd0;
+      trans_done <= 'd0;
+      burst_cnt  <= 'd0;
     end else begin
-      // handle the new cmd fifo data
-      if (pop_cmd_valid && pop_cmd_ready) begin
-        if (pop_cmd_type == FIFO_CMD_TYPE) begin
-          io_app_burst_number <= pop_cmd_burst_cnt;
-          io_app_cmd          <= DDR_WT_CMD;
-          io_app_cmd_en       <= 1'd1;
-          io_app_addr         <= pop_cmd_addr;
-          io_app_wdata        <= pop_cmd_wt_data;
-          io_app_wdata_en     <= (burst_cnt != io_app_burst_number + 1'd1) && io_app_wdata_ready;
-          io_app_wdata_end    <= (burst_cnt != io_app_burst_number + 1'd1) && io_app_wdata_ready;
-          io_app_wdata_mask   <= pop_cmd_wt_mask;
-          burst_cnt           <= 7'd0;
-        end else if (pop_cmd_type == FIFO_WT_TYPE) begin
-          io_app_wdata      <= pop_cmd_wt_data;
-          io_app_wdata_en   <= (burst_cnt != io_app_burst_number + 1'd1) && io_app_wdata_ready;
-          io_app_wdata_end  <= (burst_cnt != io_app_burst_number + 1'd1) && io_app_wdata_ready;
-          io_app_wdata_mask <= pop_cmd_wt_mask;
-        end else if (pop_cmd_type == FIFO_RD_TYPE) begin
-          io_app_burst_number <= pop_cmd_burst_cnt;
-          io_app_cmd          <= DDR_RD_CMD;
-          io_app_cmd_en       <= 1'd1;
-          io_app_addr         <= pop_cmd_addr;
-          io_app_wdata_en     <= 1'd0;
-          io_app_wdata_end    <= 1'd0;
-          burst_cnt           <= 7'd0;
-        end
-      end
-
-      // only keep one cycle
-      if (int_cmd_en) int_cmd_en <= 1'd0;
-      if (app_data_fire) burst_cnt <= burst_cnt + 1'd1;
-      if (burst_cnt == io_app_burst_number + 1'd1) begin
-
-      end
     end
   end
 

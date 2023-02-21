@@ -195,6 +195,12 @@ module axi4_cache (
             if (axi4_w_fire) begin
               case (int_axi4_arw_addr[3])
                 1'b0: begin
+                  for (integer i = 0; i < 8; i = i + 1) begin
+                    if(io_axi4_wstrb[i]) begin
+                      // cache_addr[i*8+7 -:i*8] <= io_axi4_wdata[(i+1)*8-1 -:i*8];
+                      cache_dirty_bit[i] <= 1'b0;
+                    end
+                  end
                   if (io_axi4_wstrb[0]) begin
                     cache_addr[7:0]    <= io_axi4_wdata[7:0];
                     cache_dirty_bit[0] <= 1'b0;
