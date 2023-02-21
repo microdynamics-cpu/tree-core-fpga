@@ -1,3 +1,5 @@
+`timescale 1ns / 1ps
+
 module DDR3_Memory_Interface_Top (
     input          memory_clk,
     input          clk,
@@ -80,6 +82,7 @@ module DDR3_Memory_Interface_Top (
   assign cmd_ready           = 1'd1;  // fake
   assign wr_data_rdy         = int_wt_data_ready;
   assign rd_data_valid       = int_rd_data_valid;
+  assign rd_data_end         = int_rd_data_valid;
   assign rd_data             = int_rd_data;
   assign init_calib_complete = int_init_calib_complete;
   assign clk_out             = int_clk_out;
@@ -92,6 +95,18 @@ module DDR3_Memory_Interface_Top (
     for (integer i = 0; i < WIDTH; i = i + 1) begin
       mem[i] <= 'd0;
     end
+  end
+
+
+  initial begin
+    #600
+      // #1700
+      for (
+          integer i = 0; i < 8 * 12; i = i + 8
+      ) begin
+        $display("mem[%d]: %h%h%h%h%h%h%h%h", i, mem[i+7], mem[i+6], mem[i+5], mem[i+4], mem[i+3],
+                 mem[i+2], mem[i+1], mem[i]);
+      end
   end
 
   always @(posedge memory_clk or negedge rst_n) begin
@@ -112,7 +127,7 @@ module DDR3_Memory_Interface_Top (
     end
   end
 
-  always @(posedge memory_clk or negedge rst_n) begin
+  always @(posedge clk_out or negedge rst_n) begin
     if (~rst_n) begin
       int_init_calib_complete <= 'd0;
       init_calib_cnt          <= 'd0;
@@ -123,17 +138,18 @@ module DDR3_Memory_Interface_Top (
     end
   end
 
-  always @(posedge memory_clk or negedge rst_n) begin
+  always @(posedge clk_out or negedge rst_n) begin
     if (~rst_n) begin
       int_cmd  <= WT_CMD;
       int_addr <= 'd0;
     end else if (cmd_en) begin
       int_cmd  <= cmd;
       int_addr <= addr;
+      $display("[%t] int_addr", $realtime);
     end
   end
 
-  always @(posedge memory_clk or negedge rst_n) begin
+  always @(posedge clk_out or negedge rst_n) begin
     if (~rst_n) begin
       int_wt_data_ready <= 1'd1;
       int_rd_data_valid <= 1'd1;
@@ -169,6 +185,16 @@ module DDR3_Memory_Interface_Top (
 
   always @(posedge clk_out) begin
     if (int_cmd == WT_CMD && wr_data_en) begin
+      // $display("[%t] mem[%h]: %h%h%h%h%h%h%h%h", $realtime, int_addr, mem[int_addr+7], mem[int_addr+6],
+      //          mem[int_addr+5], mem[int_addr+4], mem[int_addr+3], mem[int_addr+2], mem[int_addr+1],
+      //          mem[int_addr]);
+
+      $display("[%t] wr_data[%h]: %h%h%h%h%h%h%h%h", $realtime, int_addr, wr_data[127:120] & int_wt_mask[127:120],
+               wr_data[119:104] & int_wt_mask[119:104], wr_data[95:88] & int_wt_mask[95:88],
+               wr_data[79:72] & int_wt_mask[79:72], wr_data[63:56] & int_wt_mask[63:56],
+               wr_data[47:40] & int_wt_mask[47:40], wr_data[31:16] & int_wt_mask[31:16],
+               wr_data[15:0] & int_wt_mask[15:0]);
+      $display("[%t] %h", $realtime, int_addr);
       mem[int_addr]   <= (wr_data[15:0] & int_wt_mask[15:0]);
       mem[int_addr+1] <= (wr_data[31:16] & int_wt_mask[31:16]);
       mem[int_addr+2] <= (wr_data[47:40] & int_wt_mask[47:40]);
