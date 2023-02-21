@@ -20,6 +20,7 @@ module ddr3_tb ();
 
 
   initial begin
+    $timeformat(-9, 2, " ns", 10);
     $dumpfile("build/ddr3.wave");
     $dumpvars(0, ddr3_tb);
   end
@@ -87,14 +88,14 @@ module ddr3_tb ();
           if (int_app_cmd_ready && int_app_wdata_ready) begin
             int_app_cmd_en       <= 1'd1;
             int_app_cmd          <= WT_CMD;
-            int_app_addr         <= {DDR3_ADDR{1'd0}};
+            int_app_addr         <= 'd0;
             int_app_burst_number <= DATA_NUM - 1;
 
             int_app_wdata_en     <= 1'd1;
             int_app_wdata_end    <= 1'd1;
             int_app_wdata        <= 128'h0123_4567_890A_BCDE_FEDC_BA98_7654_3210;
             int_app_wdata_mask   <= int_app_wdata_mask << 1;
-            wt_cnt               <= wt_cnt + 1'd1;
+            wt_cnt               <= 'd0;
             state                <= FILL_WT;
           end
         end

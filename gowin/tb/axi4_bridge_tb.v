@@ -15,7 +15,7 @@ module axi4_bridge_tb ();
     rstn       = 1'd0;
     #40 rstn = 1'd1;
     #97 lock = 1;  // 97 for aync to clk edge
-    #500 $finish;
+    #1600 $finish;
   end
 
 
@@ -102,24 +102,27 @@ module axi4_bridge_tb ();
         FILL_INIT: begin
           if (fifo_cmd_valid && fifo_cmd_ready) begin
             state              <= FILL_WT;
-            wt_cnt             <= wt_cnt + 1'd1;
+            wt_cnt             <= 'd0;
             fifo_cmd_type      <= FIFO_CMD_TYPE;
             fifo_cmd_addr      <= 'd0;
-            fifo_cmd_burst_cnt <= DATA_NUM - 1;
+            fifo_cmd_burst_cnt <= DATA_NUM;
             fifo_wt_valid      <= 1'd1;
             fifo_cmd_wt_data   <= 128'h0123_4567_890A_BCDE_FEDC_BA98_7654_3210;
             fifo_cmd_wt_mask   <= fifo_cmd_wt_mask << 1;
-            fifo_rsp_valid     <= 1'd0;
+            fifo_rsp_valid     <= 'd0;
           end
         end
         FILL_WT: begin
           fifo_cmd_valid <= 1'd0;
           if (fifo_wt_valid && fifo_cmd_ready) begin
             if (wt_cnt == DATA_NUM - 1) begin
-              state          <= CHECK_INIT;
-              wt_cnt         <= 'd0;
-              fifo_cmd_type  <= FIFO_IDE_TYPE;
-              fifo_cmd_valid <= 1'd1;
+              state            <= CHECK_INIT;
+              wt_cnt           <= 'd0;
+              // fifo_cmd_type    <= FIFO_IDE_TYPE;
+              fifo_cmd_valid   <= 1'd1;
+              fifo_wt_valid    <= 1'd0;
+              fifo_cmd_wt_data <= 'd0;
+              fifo_cmd_wt_mask <= 'hFFFF;
             end else begin
               wt_cnt           <= wt_cnt + 1'd1;
               fifo_cmd_type    <= FIFO_WT_TYPE;
@@ -130,21 +133,24 @@ module axi4_bridge_tb ();
         end
         CHECK_INIT: begin
           if (fifo_cmd_valid && fifo_cmd_ready) begin
+            // $display("hhhhh");
             state              <= CHECK_RD;
-            rd_cnt             <= rd_cnt + 1'd1;
+            rd_cnt             <= 1'd0;
             fifo_cmd_type      <= FIFO_RD_TYPE;
             fifo_cmd_addr      <= 'd0;
-            fifo_cmd_burst_cnt <= DATA_NUM - 1;
+            fifo_cmd_burst_cnt <= DATA_NUM - 4;
             fifo_rsp_valid     <= 1'd1;
           end
         end
         CHECK_RD: begin
+          // fifo_cmd_valid <= 1'd0;
           if (fifo_rsp_valid && fifo_rsp_ready) begin
-            if (rd_cnt == DATA_NUM - 1) begin
+            if (rd_cnt == DATA_NUM - 4 - 1) begin
               state          <= CHECK_COMP;
               rd_cnt         <= 'd0;
               fifo_cmd_type  <= FIFO_IDE_TYPE;
               fifo_cmd_valid <= 1'd1;
+              fifo_rsp_valid <= 1'd0;
             end else begin
               rd_cnt <= rd_cnt + 1'd1;
             end
