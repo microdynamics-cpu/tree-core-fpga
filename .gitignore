@@ -10,3 +10,4 @@ build
 *.jou
 *.log
 simv
+.metals
