@@ -10,5 +10,5 @@ object Config {
 }
 
 object GOWIN_AXI4_DDR3 extends App {
-  Config.spinal.generateVerilog(Paski_GowinDDR_AXI4(ClockDomain.external("sys_clk"), ClockDomain.external("mem_clk")))
+  Config.spinal.generateVerilog(GowinDDR_AXI4(ClockDomain.external("sys_clk"), ClockDomain.external("mem_clk")))
 }

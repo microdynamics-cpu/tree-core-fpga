@@ -21,7 +21,7 @@ case class Paski_GowinDDR_PayloadRSP[T <: Data](contextType: T) extends Bundle {
   val context  = cloneOf(contextType)
 }
 
-case class Paski_GowinDDR14_Controller[T <: Data](sys_clk: ClockDomain, ddr_ref_clk: ClockDomain, addrlen: Int = 27, burstlen: Int = 6, fifo_length: Int = 32, contextType: T) extends Component {
+case class GowinDDR14_Controller[T <: Data](sys_clk: ClockDomain, ddr_ref_clk: ClockDomain, addrlen: Int = 27, burstlen: Int = 6, fifo_length: Int = 32, contextType: T) extends Component {
 
   val sys_clk_inst     = sys_clk
   val ddr_ref_clk_inst = ddr_ref_clk

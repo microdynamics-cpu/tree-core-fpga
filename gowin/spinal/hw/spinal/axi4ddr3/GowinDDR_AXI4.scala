@@ -5,7 +5,7 @@ import spinal.lib.bus.amba4.axi.Axi4Shared
 import spinal.lib.{master, slave}
 
 // sys_clk: 27MHz mem_clk: 400MHz
-case class Paski_GowinDDR_AXI4(sys_clk: ClockDomain, mem_clk: ClockDomain) extends Component {
+case class GowinDDR_AXI4(sys_clk: ClockDomain, mem_clk: ClockDomain) extends Component {
 
   val gowin_DDR3 = Gowin_DDR3(
     sys_clk,
@@ -13,14 +13,14 @@ case class Paski_GowinDDR_AXI4(sys_clk: ClockDomain, mem_clk: ClockDomain) exten
   )
   val ddr_ref_clk = gowin_DDR3.clk_out
 
-  val axi4cache = Paski_GowinDDR_AXI4WithCache(
+  val axi4cache = GowinDDR_AXI4WithCache(
     sys_clk,
     32,
     27,
     4
   )
 
-  val axi4ctrl = Paski_GowinDDR14_Controller(
+  val axi4ctrl = GowinDDR14_Controller(
     sys_clk,
     ddr_ref_clk,
     contextType = axi4cache.context_type,

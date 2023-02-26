@@ -9,7 +9,7 @@ import spinal.lib.{master, slave, Stream}
 // val last = Bool()
 // }
 
-case class Paski_GowinDDR_AXI4WithCache(sys_clk: ClockDomain, dataWidth: Int, axiaddrlen: Int, idWidth: Int, addrlen: Int = 27, burstlen: Int = 6) extends Component {
+case class GowinDDR_AXI4WithCache(sys_clk: ClockDomain, dataWidth: Int, axiaddrlen: Int, idWidth: Int, addrlen: Int = 27, burstlen: Int = 6) extends Component {
 
   val sys_clk_inst = sys_clk
 
