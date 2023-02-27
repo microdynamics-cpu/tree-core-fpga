@@ -57,7 +57,7 @@ module bare_ddr3_top (
       .cmd_ready          (app_cmd_rdy),
       .cmd                (app_cmd),
       .cmd_en             (app_cmd_en),
-      .addr               (app_addr),
+      .addr               ({1'd0, app_addr}),
       .wr_data_rdy        (app_wdata_rdy),
       .wr_data            (app_wdata),
       .wr_data_en         (app_wdata_en),
@@ -95,7 +95,7 @@ module bare_ddr3_top (
   //   bare_random_tester u_bare_random_tester (
   bare_tester u_bare_tester (
       .clk                (clk),
-      .clk_x1             (clk_mem_div4),
+      .clk_ref            (clk_mem_div4),
       .rstn               (rstn),
       .init_calib_complete(init_calib_complete),
       .app_burst_number   (app_burst_number),
