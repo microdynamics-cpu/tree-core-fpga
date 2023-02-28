@@ -29,13 +29,13 @@ case class GowinDDR_AXI4WithCache(sys_clk: ClockDomain, dataWidth: Int, axiaddrl
   val io = new Bundle() {
     val axi = slave(Axi4Shared(axiConfig))
 
-    val ddr_cmd = master(Stream(Paski_GowinDDR_PayloadCMD(addrlen, burstlen, context_type)))
-    val ddr_rsp = slave(Stream(Paski_GowinDDR_PayloadRSP(context_type)))
+    val ddr_cmd = master(Stream(GowinDDR_PayloadCMD(addrlen, burstlen, context_type)))
+    val ddr_rsp = slave(Stream(GowinDDR_PayloadRSP(context_type)))
   }
 
   val sys_area = new ClockingArea(sys_clk) {
     val ddr_cmd_valid   = Reg(Bool()).init(False)
-    val ddr_cmd_payload = Paski_GowinDDR_PayloadCMD(addrlen, burstlen, context_type)
+    val ddr_cmd_payload = GowinDDR_PayloadCMD(addrlen, burstlen, context_type)
     io.ddr_cmd.valid   := ddr_cmd_valid
     io.ddr_cmd.payload := ddr_cmd_payload
 
@@ -77,7 +77,7 @@ case class GowinDDR_AXI4WithCache(sys_clk: ClockDomain, dataWidth: Int, axiaddrl
     val pageNotSame = cache_addr((addrlen - 1).downto(4)) =/= arwcmd.addr((addrlen - 1).downto(4))
 
     ddr_cmd_payload.addr      := 0
-    ddr_cmd_payload.cmdtype   := Paski_GowinDDR_CMDTYPE.write
+    ddr_cmd_payload.cmdtype   := GowinDDR_CMDTYPE.write
     ddr_cmd_payload.burst_cnt := 0
     ddr_cmd_payload.wr_data   := cache_data
     ddr_cmd_payload.wr_mask   := cache_dirty_bit
@@ -90,12 +90,12 @@ case class GowinDDR_AXI4WithCache(sys_clk: ClockDomain, dataWidth: Int, axiaddrl
         when(pageDirty_Trigger) {
           ddr_cmd_payload.addr    := (cache_addr((addrlen - 1).downto(4)).asBits ## B"0000").asUInt
           ddr_cmd_valid           := ~io.ddr_cmd.fire
-          ddr_cmd_payload.cmdtype := Paski_GowinDDR_CMDTYPE.write
+          ddr_cmd_payload.cmdtype := GowinDDR_CMDTYPE.write
           pageDirty_Trigger.clearWhen(io.ddr_cmd.fire)
         }.elsewhen(pageNotSame_Trigger) {
           ddr_cmd_payload.addr    := (arwcmd.addr((addrlen - 1).downto(4)).asBits ## B"0000").asUInt
           ddr_cmd_valid           := ~io.ddr_cmd.fire
-          ddr_cmd_payload.cmdtype := Paski_GowinDDR_CMDTYPE.read
+          ddr_cmd_payload.cmdtype := GowinDDR_CMDTYPE.read
           pageNotSame_Trigger.clearWhen(io.ddr_cmd.fire)
         }
       }.otherwise {

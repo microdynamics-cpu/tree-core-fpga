@@ -3,12 +3,12 @@ package axi4ddr3
 import spinal.core._
 import spinal.lib.{master, slave, Stream, StreamFifoCC}
 
-object Paski_GowinDDR_CMDTYPE extends SpinalEnum {
+object GowinDDR_CMDTYPE extends SpinalEnum {
   val read, write = newElement()
 }
 
-case class Paski_GowinDDR_PayloadCMD[T <: Data](addrlen: Int, burstlen: Int, contextType: T) extends Bundle {
-  val cmdtype   = Paski_GowinDDR_CMDTYPE()
+case class GowinDDR_PayloadCMD[T <: Data](addrlen: Int, burstlen: Int, contextType: T) extends Bundle {
+  val cmdtype   = GowinDDR_CMDTYPE()
   val addr      = UInt(addrlen bits)
   val burst_cnt = UInt(burstlen bits)
   val wr_data   = Bits(128 bits)
@@ -16,7 +16,7 @@ case class Paski_GowinDDR_PayloadCMD[T <: Data](addrlen: Int, burstlen: Int, con
   val context   = cloneOf(contextType)
 }
 
-case class Paski_GowinDDR_PayloadRSP[T <: Data](contextType: T) extends Bundle {
+case class GowinDDR_PayloadRSP[T <: Data](contextType: T) extends Bundle {
   val rsp_data = Bits(128 bits)
   val context  = cloneOf(contextType)
 }
@@ -42,19 +42,19 @@ case class GowinDDR14_Controller[T <: Data](sys_clk: ClockDomain, ddr_ref_clk: C
     // val rd_data_end = in Bool() // not use due to 1:4 mode
     val init_calib_complete = in.Bool()
 
-    val ddr_cmd = slave(Stream(Paski_GowinDDR_PayloadCMD(addrlen, burstlen, contextType)))
-    val ddr_rsp = master(Stream(Paski_GowinDDR_PayloadRSP(contextType)))
+    val ddr_cmd = slave(Stream(GowinDDR_PayloadCMD(addrlen, burstlen, contextType)))
+    val ddr_rsp = master(Stream(GowinDDR_PayloadRSP(contextType)))
   }
 
   val cmd_fifo = new StreamFifoCC(
-    dataType  = Paski_GowinDDR_PayloadCMD(addrlen, burstlen, contextType),
+    dataType  = GowinDDR_PayloadCMD(addrlen, burstlen, contextType),
     depth     = fifo_length,
     pushClock = sys_clk,
     popClock  = ddr_ref_clk
   )
 
   val rsp_fifo = new StreamFifoCC(
-    dataType  = Paski_GowinDDR_PayloadRSP(contextType),
+    dataType  = GowinDDR_PayloadRSP(contextType),
     depth     = fifo_length,
     pushClock = ddr_ref_clk,
     popClock  = sys_clk
@@ -99,7 +99,7 @@ case class GowinDDR14_Controller[T <: Data](sys_clk: ClockDomain, ddr_ref_clk: C
     io.addr             := cmd.addr
     io.wr_data          := cmd.wr_data
     io.wr_data_mask     := cmd.wr_mask
-    when(cmd.cmdtype === Paski_GowinDDR_CMDTYPE.read) {
+    when(cmd.cmdtype === GowinDDR_CMDTYPE.read) {
       io.cmd        := B"001"
       io.wr_data_en := False
     }.otherwise { // write
