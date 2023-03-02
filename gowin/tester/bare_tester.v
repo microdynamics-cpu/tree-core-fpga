@@ -1,6 +1,6 @@
 module bare_tester (
     input               clk,
-    input               clk_x1,
+    input               clk_ref,
     output reg          rstn,
     input               init_calib_complete,
     output reg  [  5:0] app_burst_number,
@@ -19,11 +19,7 @@ module bare_tester (
     output              txp
 );
 
-  // always @(posedge clk_x1) begin
-  //   app_wdata_mask <= 'd0;
-  // end
-
-  reg [31:0] rst_cnt;
+  reg [63:0] rst_cnt;
   always @(posedge clk) begin
     rst_cnt <= rst_cnt + 1;
     if (rst_cnt > 32'd2_700_000_000 - 32'd1) begin
@@ -89,7 +85,8 @@ module bare_tester (
   //counted in 2 Bytes
   //So in every Single-Busrt, the addr should increse by 8
   //In a 64-Burst, the addr should increse by 512
-  assign app_addr = {int_app_addr[12:10], int_app_addr[26:13], int_app_addr[9:0]};
+  // assign app_addr = {int_app_addr[12:10], int_app_addr[26:13], int_app_addr[9:0]};
+  assign app_addr = int_app_addr;
 
   reg [127:0] rng;
   reg [127:0] rng_inv;
@@ -109,7 +106,7 @@ module bare_tester (
     end
   end
 
-  always @(posedge clk_x1) begin
+  always @(posedge clk_ref) begin
     rng     <= rng_i;
     rng_inv <= ~rng_i;
     mask    <= mask_i;
@@ -123,8 +120,8 @@ module bare_tester (
 
     if (rng_rst) begin
       rng_i   <= rng_init_pattern;
-      mask_i  <= 'hFFFE;
       // mask_i  <= 'hF8FC;
+      mask_i  <= 'h0;
       rng_cnt <= 7'd0;
     end
   end
@@ -137,7 +134,7 @@ module bare_tester (
   reg [  5:0] wt_cnt;
   reg         error_bit;
 
-  always @(posedge clk_x1 or negedge rstn) begin
+  always @(posedge clk_ref or negedge rstn) begin
     if (rstn == 1'b0) begin
       init_cnt      <= 'd0;
       wt_cnt        <= 'd0;
@@ -170,7 +167,7 @@ module bare_tester (
 
           case (detect_state)
             DETECT_SIZE_WR0:
-            if (app_cmd_rdy && app_wdata_rdy && (init_cnt == 8'd0)) begin
+            if (app_cmd_rdy && app_wdata_rdy && (init_cnt == 8'd0)) begin // init_cnt == 0: wait 255 cycle
               app_cmd_en    <= 1'b1;
               app_cmd       <= WR_CMD;
               int_app_addr  <= 27'h000_0000;
@@ -185,7 +182,7 @@ module bare_tester (
             if (app_cmd_rdy && app_wdata_rdy && (init_cnt == 8'd0)) begin
               app_cmd_en    <= 1'b1;
               app_cmd       <= WR_CMD;
-              int_app_addr  <= 27'h400_0000;  //Set highest adr line to 1 to detect ddr size
+              int_app_addr  <= 27'h80_0000;
 
               app_wdata_en  <= 1'b1;
               app_wdata     <= DET_SIZE_WR_VAL2;
@@ -228,7 +225,8 @@ module bare_tester (
             FILL_RST: begin
               rng_rst      <= 1'b1;
               //set adr to the prev pos, so after add 64, it will be 0
-              int_app_addr <= 28'h800_0000 - 28'd64;
+              // int_app_addr <= 28'h800_0000 - 28'd64;
+              int_app_addr <= 27'h000_0000 - 27'd64;
               fill_state   <= FILL_RNG;
             end
             FILL_RNG: begin
@@ -258,7 +256,7 @@ module bare_tester (
 
                 fill_state   <= FILL_RNG;
                 if (ddr_size == DDR_SIZE_1G) begin
-                  if ({1'b0, int_app_addr} == 28'h400_0000 - 28'd128) begin
+                  if (int_app_addr == 27'h100_0000 - 27'd128) begin
                     work_state <= WORK_CHECK;
                     fill_state <= FILL_RST;
                   end
@@ -285,7 +283,7 @@ module bare_tester (
             CHECK_RST: begin
               rng_rst      <= 1'b1;
               //set adr to the prev pos, so after add 64, it will be 0
-              int_app_addr <= 28'h800_0000 - 28'd64;
+              int_app_addr <= 27'h000_0000 - 27'd64;
               check_state  <= CHECK_CMD;
             end
 
@@ -327,8 +325,8 @@ module bare_tester (
                   check_state <= CHECK_CMD;
 
                   if (ddr_size == DDR_SIZE_1G) begin
-                    if ({1'b0, int_app_addr} == 28'h400_0000 - 28'd64) begin
-                      work_state  <= WORK_INV_FILL;
+                    if (int_app_addr == 27'h100_0000 - 28'd64) begin
+                      work_state  <= WORK_FINAL;
                       check_state <= CHECK_RST;
                     end
                   end else begin
@@ -359,7 +357,7 @@ module bare_tester (
             FILL_RST: begin
               rng_rst      <= 1'b1;
               //set adr to the prev pos, so after add 64, it will be 0
-              int_app_addr <= 28'h800_0000 - 28'd64;
+              int_app_addr <= 28'h000_0000 - 28'd64;
               fill_state   <= FILL_RNG;
             end
             FILL_RNG: begin
@@ -389,7 +387,7 @@ module bare_tester (
 
                 fill_state   <= FILL_RNG;
                 if (ddr_size == DDR_SIZE_1G) begin
-                  if ({1'b0, int_app_addr} == 28'h400_0000 - 28'd128) begin
+                  if ({1'b0, int_app_addr} == 28'h600_0000 - 28'd128) begin
                     work_state <= WORK_INV_CHECK;
                     fill_state <= FILL_RST;
                   end
@@ -417,7 +415,7 @@ module bare_tester (
             CHECK_RST: begin
               rng_rst      <= 1'b1;
               //set adr to the prev pos, so after add 64, it will be 0
-              int_app_addr <= 28'h800_0000 - 28'd64;
+              int_app_addr <= 28'h000_0000 - 28'd64;
               check_state  <= CHECK_CMD;
             end
 
@@ -456,7 +454,7 @@ module bare_tester (
                   check_state <= CHECK_CMD;
 
                   if (ddr_size == DDR_SIZE_1G) begin
-                    if ({1'b0, int_app_addr} == 28'h400_0000 - 28'd64) begin
+                    if ({1'b0, int_app_addr} == 28'h600_0000 - 28'd64) begin
                       work_state  <= WORK_CC_FILL;
                       check_state <= CHECK_RST;
                     end
